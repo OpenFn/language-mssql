@@ -1,27 +1,38 @@
-Language mssql
-==============
+# Language MSSQL [![Build Status](https://travis-ci.org/OpenFn/language-mssql.svg?branch=master)](https://travis-ci.org/OpenFn/language-mssql)
 
-Language Pack for sending messages using the [mssql API](http://docs.mssql.com/mssql-platform/sql-api/).
+Language Pack for connecting to Azure SQL Server via OpenFn.
 
-Documentation
--------------
+## Documentation
 
-```js
-sql(
-  function(state) {
-    return (
-      `INSERT INTO untitled_table (name, the_geom) VALUES ('`
-      + dataValue("form.first_name")(state)
-      + `', ST_SetSRID(ST_Point(`
-        + dataValue("lat")(state) + `, `
-        + dataValue("long")(state) + `),4326))`
-    )
+### Sample state.json
+
+```json
+{
+  "data": { "a": 1 },
+  "configuration": {
+    "userName": "shhh",
+    "password": "secret",
+    "server": "something.database.windows.net",
+    "database": "my-demo"
   }
-)
+}
 ```
 
-Development
------------
+### Sample expression
+
+```js
+sql({
+  query: `
+    SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES
+    WHERE TABLE_TYPE = 'BASE TABLE'
+    AND TABLE_CATALOG='my-demo'
+  `,
+});
+
+sql({ query: `SELECT * FROM Household` });
+```
+
+## Development
 
 Clone the repo, run `npm install`.
 

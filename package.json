@@ -1,7 +1,7 @@
 {
   "name": "language-mssql",
-  "version": "0.0.1",
-  "description": "mssql Language Pack for OpenFn",
+  "version": "1.0.0",
+  "description": "A Microsoft SQL language pack for OpenFn",
   "main": "lib/index.js",
   "scripts": {
     "build": "make",
@@ -14,11 +14,9 @@
     "lib/"
   ],
   "dependencies": {
-    "JSONPath": "^0.10.0",
-    "language-common": "github:openfn/language-common",
-    "lodash-fp": "^0.10.2",
-    "superagent": "^1.7.2",
-    "tedious": "^1.14.0"
+    "language-common": "github:openfn/language-common#v0.3.0",
+    "tedious": "8.0.1",
+    "request": "2.88.0"
   },
   "devDependencies": {
     "assertion-error": "^1.0.1",

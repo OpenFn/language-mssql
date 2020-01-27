@@ -1,6 +1,52 @@
-import { execute as commonExecute, expandReferences } from 'language-common';
-import { post } from './Client';
+import {
+  execute as commonExecute,
+  expandReferences,
+  composeNextState,
+} from 'language-common';
 import { resolve as resolveUrl } from 'url';
+import { Connection, Request } from 'tedious';
+
+/**
+ * Creates a connection.
+ * @example
+ *  createConnection(state)
+ * @function
+ * @param {State} state - Runtime state.
+ * @returns {State}
+ */
+function createConnection(state) {
+  const { server, userName, password, database } = state.configuration;
+
+  if (!server) {
+    throw new Error('server missing from configuration.');
+  }
+
+  const config = {
+    authentication: {
+      options: { userName, password },
+      type: 'default',
+    },
+    server,
+    options: {
+      database,
+      encrypt: true,
+    },
+  };
+
+  var connection = new Connection(config);
+
+  // Attempt to connect and execute queries if connection goes through
+  return new Promise((resolve, reject) => {
+    connection.on('connect', err => {
+      if (err) {
+        console.error(err.message);
+        reject(err);
+      } else {
+        resolve({ ...state, connection });
+      }
+    });
+  });
+}
 
 /**
  * Execute a sequence of operations.
@@ -17,13 +63,32 @@ import { resolve as resolveUrl } from 'url';
 export function execute(...operations) {
   const initialState = {
     references: [],
-    data: null
-  }
-
-  return state => {
-    return commonExecute(...operations)({ ...initialState, ...state })
+    data: null,
   };
 
+  return state => {
+    return commonExecute(
+      createConnection,
+      ...operations,
+      cleanupState
+    )({ ...initialState, ...state });
+  };
+}
+
+/**
+ * Removes unserializable keys from the state.
+ * @example
+ *  cleanupState(state)
+ * @function
+ * @param {State} state
+ * @returns {State}
+ */
+function cleanupState(state) {
+  if (state.connection) {
+    state.connection.close();
+  }
+  delete state.connection;
+  return state;
 }
 
 /**
@@ -36,30 +101,55 @@ export function execute(...operations) {
  * @param {object} sqlQuery - Payload data for the message
  * @returns {Operation}
  */
-export function sql(sqlQuery) {
-
+export function sql(params) {
   return state => {
+    let { connection } = state;
+    let { query, options } = expandReferences(params)(state);
+    let response = [];
 
-    const body = sqlQuery(state);
+    return new Promise((resolve, reject) => {
+      queryDatabase();
 
-    const { account, apiKey } = state.configuration;
+      function queryDatabase() {
+        console.log('Reading rows from the Table...');
 
-    const url = 'https://'.concat(account, '.mssql.com/api/v2/sql')
+        // Read all rows from table
+        const request = new Request(query, (err, rowCount) => {
+          if (err) {
+            console.error(err.message);
+            reject(err);
+          } else {
+            if (rowCount === 0) {
+              console.log(`${rowCount} row(s) returned. Not updating state.`);
+              resolve(state);
+            }
+          }
+        });
 
-    console.log(url)
-    console.log("Executing SQL query:");
-    console.log(body)
+        request.on('row', columns => {
+          console.log(columns);
+          response.push(columns);
+        });
 
-    return post({ apiKey, body, account, url })
-    .then((result) => {
-      console.log("Success:", result);
-      return { ...state, references: [ result, ...state.references ] }
-    })
+        request.on('requestCompleted', () => {
+          console.log('Request finished.');
+          const nextState = composeNextState(state, response);
+          resolve(nextState);
+        });
 
-  }
+        connection.execSql(request);
+      }
+    });
+  };
 }
 
 export {
-  field, fields, sourceValue,
-  merge, dataPath, dataValue, lastReferenceValue
+  alterState,
+  field,
+  fields,
+  sourceValue,
+  merge,
+  dataPath,
+  dataValue,
+  lastReferenceValue,
 } from 'language-common';
