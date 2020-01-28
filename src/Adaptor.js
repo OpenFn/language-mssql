@@ -93,7 +93,7 @@ function cleanupState(state) {
 }
 
 /**
- * Exequet an SQL statement
+ * Execute an SQL statement
  * @example
  * execute(
  *   sql(sqlQuery)
@@ -104,8 +104,8 @@ function cleanupState(state) {
  */
 export function sql(params) {
   return state => {
-    let { connection } = state;
-    let { query, options } = expandReferences(params)(state);
+    const { connection } = state;
+    const { query, options } = expandReferences(params)(state);
 
     return new Promise((resolve, reject) => {
       console.log(`Executing query: ${query}`);
@@ -115,7 +115,7 @@ export function sql(params) {
           console.error(err.message);
           throw err;
         } else {
-          console.log('Request finished:');
+          console.log(`Finished: ${rowCount} row(s).`);
           console.log(rows);
           const nextState = composeNextState(state, rows);
           resolve(nextState);
