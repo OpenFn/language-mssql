@@ -1,6 +1,6 @@
 {
   "name": "language-mssql",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "A Microsoft SQL language pack for OpenFn",
   "main": "lib/index.js",
   "scripts": {
