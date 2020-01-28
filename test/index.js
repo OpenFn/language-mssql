@@ -4,7 +4,8 @@ import Adaptor from '../src';
 const { execute, event } = Adaptor;
 
 describe('execute', () => {
-  it('executes each operation in sequence', done => {
+  // Mock this endpoint...
+  it.skip('executes each operation in sequence', done => {
     let state = {
       configuration: {
         server: 'testurl',
