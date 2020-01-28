@@ -30,6 +30,7 @@ function createConnection(state) {
     options: {
       database,
       encrypt: true,
+      rowCollectionOnRequestCompletion: true,
     },
   };
 
@@ -105,40 +106,22 @@ export function sql(params) {
   return state => {
     let { connection } = state;
     let { query, options } = expandReferences(params)(state);
-    let response = [];
 
     return new Promise((resolve, reject) => {
-      queryDatabase();
+      console.log(`Executing query: ${query}`);
 
-      function queryDatabase() {
-        console.log('Reading rows from the Table...');
-
-        // Read all rows from table
-        const request = new Request(query, (err, rowCount) => {
-          if (err) {
-            console.error(err.message);
-            reject(err);
-          } else {
-            if (rowCount === 0) {
-              console.log(`${rowCount} row(s) returned. Not updating state.`);
-              resolve(state);
-            }
-          }
-        });
-
-        request.on('row', columns => {
-          console.log(columns);
-          response.push(columns);
-        });
-
-        request.on('requestCompleted', () => {
+      const request = new Request(query, (err, rowCount, rows) => {
+        if (err) {
+          console.error(err.message);
+          reject(err);
+        } else {
           console.log('Request finished.');
-          const nextState = composeNextState(state, response);
+          const nextState = composeNextState(state, rows);
           resolve(nextState);
-        });
+        }
+      });
 
-        connection.execSql(request);
-      }
+      connection.execSql(request);
     });
   };
 }
