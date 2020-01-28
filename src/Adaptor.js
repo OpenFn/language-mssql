@@ -113,9 +113,10 @@ export function sql(params) {
       const request = new Request(query, (err, rowCount, rows) => {
         if (err) {
           console.error(err.message);
-          reject(err);
+          throw err;
         } else {
-          console.log('Request finished.');
+          console.log('Request finished:');
+          console.log(rows);
           const nextState = composeNextState(state, rows);
           resolve(nextState);
         }
