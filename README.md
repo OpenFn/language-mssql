@@ -30,6 +30,31 @@ sql({
 });
 
 sql({ query: `SELECT * FROM Household` });
+
+insert('SomeDB.dbo.SupplierTest', {
+  SupplierNumber: 1,
+  Name: dataValue('name'),
+  Address: 'Nunya Bihz-Nash',
+});
+
+upsert('SomeDB.dbo.Supplier', 'SupplierNumber', {
+  SupplierNumber: 1,
+  Name: dataValue('name'),
+  Address: 'Now I can tell!',
+});
+
+// Note that insertMany takes a function which returns an array—this helps
+// enforce that each item in the array has the same keys.
+insertMany(
+  'SomeDB.dbo.Supplier',
+  state.data.supplierArray.map((s) => {
+    return {
+      SupplierNumber: s.id,
+      Name: s.name,
+      Address: s.address,
+    };
+  })
+);
 ```
 
 ## Development
