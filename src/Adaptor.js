@@ -239,10 +239,10 @@ export function insert(table, record) {
  * @param {array} records - Payload data for the record as a JS array
  * @returns {Operation}
  */
-export function insertMany(table, record) {
+export function insertMany(table, records) {
   return (state) => {
     const { connection } = state;
-    const { recordData } = expandReferences(record)(state);
+    const { recordData } = expandReferences(records)(state);
 
     // Note: we select the keys of the FIRST object as the canonical template.
     const columns = Object.keys(recordData[0]);
