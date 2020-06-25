@@ -38,7 +38,7 @@ function createConnection(state) {
 
   // Attempt to connect and execute queries if connection goes through
   return new Promise((resolve, reject) => {
-    connection.on('connect', err => {
+    connection.on('connect', (err) => {
       if (err) {
         console.error(err.message);
         reject(err);
@@ -67,7 +67,7 @@ export function execute(...operations) {
     data: null,
   };
 
-  return state => {
+  return (state) => {
     return commonExecute(
       createConnection,
       ...operations,
@@ -103,12 +103,157 @@ function cleanupState(state) {
  * @returns {Operation}
  */
 export function sql(params) {
-  return state => {
+  return (state) => {
     const { connection } = state;
     const { query, options } = expandReferences(params)(state);
 
     return new Promise((resolve, reject) => {
       console.log(`Executing query: ${query}`);
+
+      const request = new Request(query, (err, rowCount, rows) => {
+        if (err) {
+          console.error(err.message);
+          throw err;
+        } else {
+          console.log(`Finished: ${rowCount} row(s).`);
+          console.log(rows);
+          const nextState = composeNextState(state, rows);
+          resolve(nextState);
+        }
+      });
+
+      connection.execSql(request);
+    });
+  };
+}
+
+/**
+ * Insert or update a record using SQL MERGE
+ * @example
+ * execute(
+ *   upsert(table, uuid, record)
+ * )(state)
+ * @constructor
+ * @param {string} table - The target table
+ * @param {string} uuid - The uuid column to determine a matching/existing record
+ * @param {object} record - Payload data for the record as a JS object
+ * @returns {Operation}
+ */
+export function upsert(table, uuid, record) {
+  return (state) => {
+    const { connection } = state;
+    const { recordData } = expandReferences(record)(state);
+
+    const columns = Object.keys(recordData).sort();
+
+    const selectValues = columns
+      .map((key) => `${recordData[key]} AS ${key}`)
+      .join(', ');
+
+    const updateValues = columns
+      .map((key) => `[Target].${key}=${recordData[key]}`)
+      .join(', ');
+
+    const insertColumns = columns.join(', ');
+    const insertValues = columns.map((key) => `[Source].${key}`).join(', ');
+
+    const query = `MERGE ${table} AS [Target]
+    USING SELECT (${selectValues}) AS [Source] 
+    ON [Target].${uuid} = [Source].${uuid}
+    WHEN MATCHED THEN
+      UPDATE SET ${updateValues} 
+    WHEN NOT MATCHED THEN
+      INSERT (${insertColumns}) VALUES (${insertValues});`;
+
+    return new Promise((resolve, reject) => {
+      console.log(`Executing upsert via SQL 'MERGE' function.`);
+
+      const request = new Request(query, (err, rowCount, rows) => {
+        if (err) {
+          console.error(err.message);
+          throw err;
+        } else {
+          console.log(`Finished: ${rowCount} row(s).`);
+          console.log(rows);
+          const nextState = composeNextState(state, rows);
+          resolve(nextState);
+        }
+      });
+
+      connection.execSql(request);
+    });
+  };
+}
+
+/**
+ * Insert a record
+ * @example
+ * execute(
+ *   insert(table, record)
+ * )(state)
+ * @constructor
+ * @param {string} table - The target table
+ * @param {object} record - Payload data for the record as a JS object
+ * @returns {Operation}
+ */
+export function insert(table, record) {
+  return (state) => {
+    const { connection } = state;
+    const { recordData } = expandReferences(record)(state);
+
+    const columns = Object.keys(recordData).sort();
+    const values = columns.map((key) => recordData[key]).join(', ');
+
+    const query = `INSERT INTO ${table} (${columns.join(
+      ', '
+    )}) VALUES (${values});`;
+
+    return new Promise((resolve, reject) => {
+      console.log(`Executing upsert via SQL 'MERGE' function.`);
+
+      const request = new Request(query, (err, rowCount, rows) => {
+        if (err) {
+          console.error(err.message);
+          throw err;
+        } else {
+          console.log(`Finished: ${rowCount} row(s).`);
+          console.log(rows);
+          const nextState = composeNextState(state, rows);
+          resolve(nextState);
+        }
+      });
+
+      connection.execSql(request);
+    });
+  };
+}
+
+/**
+ * Insert many records, using the keys of the first as the column template
+ * @example
+ * execute(
+ *   insert(table, records)
+ * )(state)
+ * @constructor
+ * @param {string} table - The target table
+ * @param {array} records - Payload data for the record as a JS array
+ * @returns {Operation}
+ */
+export function insertMany(table, record) {
+  return (state) => {
+    const { connection } = state;
+    const { recordData } = expandReferences(record)(state);
+
+    // Note: we select the keys of the FIRST object as the canonical template.
+    const columns = Object.keys(recordData[0]);
+    const valueSets = recordData.map((x) => `(${Object.values(x)})`);
+
+    const query = `INSERT INTO ${table} (${columns.join(
+      ', '
+    )}) VALUES ${valueSets.join(', ')};`;
+
+    return new Promise((resolve, reject) => {
+      console.log(`Executing upsert via SQL 'MERGE' function.`);
 
       const request = new Request(query, (err, rowCount, rows) => {
         if (err) {
