@@ -132,18 +132,35 @@ export function sql(params) {
   };
 }
 
+function handleValues(sqlString, nullString) {
+  if (nullString == false) {
+    return sqlString;
+  }
+
+  const re = new RegExp(nullString, 'g');
+  return sqlString.replace(re, 'NULL');
+}
+
+function handleOptions(options) {
+  if (options && options.setNull === false) {
+    return false;
+  }
+  return (options && options.setNull) || "'undefined'";
+}
+
 /**
  * Insert a record
  * @example
  * execute(
- *   insert(table, record)
+ *   insert(table, record, {setNull: "'undefined'"})
  * )(state)
  * @constructor
  * @param {string} table - The target table
  * @param {object} record - Payload data for the record as a JS object
+ * @param {object} options - Optional options argument
  * @returns {Operation}
  */
-export function insert(table, record) {
+export function insert(table, record, options) {
   return (state) => {
     const { connection } = state;
 
@@ -153,9 +170,10 @@ export function insert(table, record) {
       const columns = Object.keys(recordData).sort();
       const values = columns.map((key) => recordData[key]).join("', '");
 
-      const query = `INSERT INTO ${table} (${columns.join(
-        ', '
-      )}) VALUES ('${values}');`;
+      const query = handleValues(
+        `INSERT INTO ${table} (${columns.join(', ')}) VALUES ('${values}');`,
+        handleOptions(options)
+      );
 
       return new Promise((resolve, reject) => {
         console.log(`Executing insert via: ${query}`);
@@ -184,14 +202,15 @@ export function insert(table, record) {
  * Insert many records, using the keys of the first as the column template
  * @example
  * execute(
- *   insert(table, records)
+ *   insert(table, records, { setNull: false })
  * )(state)
  * @constructor
  * @param {string} table - The target table
  * @param {function} records - A function that returns an array of records
+ * @param {object} options - Optional options argument
  * @returns {Operation}
  */
-export function insertMany(table, records) {
+export function insertMany(table, records, options) {
   return (state) => {
     const { connection } = state;
 
@@ -202,9 +221,12 @@ export function insertMany(table, records) {
         (x) => `('${Object.values(x).join("', '")}')`
       );
 
-      const query = `INSERT INTO ${table} (${columns.join(
-        ', '
-      )}) VALUES ${valueSets.join(', ')};`;
+      const query = handleValues(
+        `INSERT INTO ${table} (${columns.join(', ')}) VALUES ${valueSets.join(
+          ', '
+        )};`,
+        handleOptions(options)
+      );
 
       return new Promise((resolve, reject) => {
         console.log(`Executing insert many via: ${query}`);
@@ -233,15 +255,16 @@ export function insertMany(table, records) {
  * Insert or update a record using SQL MERGE
  * @example
  * execute(
- *   upsert(table, uuid, record)
+ *   upsert(table, uuid, record, { setNull: "'undefined'"})
  * )(state)
  * @constructor
  * @param {string} table - The target table
  * @param {string} uuid - The uuid column to determine a matching/existing record
  * @param {object} record - Payload data for the record as a JS object
+ * @param {object} options - Optional options argument
  * @returns {Operation}
  */
-export function upsert(table, uuid, record) {
+export function upsert(table, uuid, record, options) {
   return (state) => {
     const { connection } = state;
 
@@ -260,13 +283,16 @@ export function upsert(table, uuid, record) {
       const insertColumns = columns.join(', ');
       const insertValues = columns.map((key) => `[Source].${key}`).join(', ');
 
-      const query = `MERGE ${table} AS [Target]
-      USING (SELECT ${selectValues}) AS [Source] 
-      ON [Target].${uuid} = [Source].${uuid}
-      WHEN MATCHED THEN
-        UPDATE SET ${updateValues} 
-      WHEN NOT MATCHED THEN
-        INSERT (${insertColumns}) VALUES (${insertValues});`;
+      const query = handleValues(
+        `MERGE ${table} AS [Target]
+        USING (SELECT ${selectValues}) AS [Source] 
+        ON [Target].${uuid} = [Source].${uuid}
+        WHEN MATCHED THEN
+          UPDATE SET ${updateValues} 
+        WHEN NOT MATCHED THEN
+          INSERT (${insertColumns}) VALUES (${insertValues});`,
+        handleOptions(options)
+      );
 
       return new Promise((resolve, reject) => {
         console.log(`Executing upsert via : ${query}`);

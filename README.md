@@ -31,17 +31,32 @@ sql({
 
 sql({ query: `SELECT * FROM Household` });
 
-insert('SomeDB.dbo.SupplierTest', {
-  SupplierNumber: 1,
-  Name: dataValue('name'),
-  Address: 'Nunya Bihz-Nash',
-});
+insert(
+  'SomeDB.dbo.SupplierTest',
+  {
+    SupplierNumber: 1,
+    Name: dataValue('name'),
+    Address: 'Nunya Bihz-Nash',
+  },
+  {
+    // The optional `options` argument allows for global string replacement with
+    // NULL. This is useful if you want to map an undefined value (e.g., x.name)
+    // to NULL. It DEFAULTS to "'undefined'", and can be turned off w/ `false`.
+    setNull: "'undefined'",
+  }
+);
 
-upsert('SomeDB.dbo.Supplier', 'SupplierNumber', {
-  SupplierNumber: 1,
-  Name: dataValue('name'),
-  Address: 'Now I can tell!',
-});
+upsert(
+  'SomeDB.dbo.Supplier',
+  'SupplierNumber',
+  {
+    SupplierNumber: 1,
+    Name: dataValue('name'),
+    Address: 'Now I can tell!',
+  },
+  // Do NOT replace any instances of 'undefined' in the final SQL statement.
+  { setNull: false }
+);
 
 // Note that insertMany takes a function which returns an array—this helps
 // enforce that each item in the array has the same keys.
