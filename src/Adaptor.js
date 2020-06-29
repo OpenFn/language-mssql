@@ -132,12 +132,16 @@ export function sql(params) {
   };
 }
 
+function escapeRegExp(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+}
+
 function handleValues(sqlString, nullString) {
   if (nullString == false) {
     return sqlString;
   }
 
-  const re = new RegExp(nullString, 'g');
+  const re = new RegExp(escapeRegExp(nullString), 'g');
   return sqlString.replace(re, 'NULL');
 }
 
