@@ -219,7 +219,7 @@ export function insert(table, record, options) {
  * )(state)
  * @constructor
  * @param {string} table - The target table
- * @param {function} records - A function that returns an array of records
+ * @param {function} records - A function that takes state and returns an array of records
  * @param {object} options - Optional options argument
  * @returns {Operation}
  */
@@ -228,9 +228,12 @@ export function insertMany(table, records, options) {
     const { connection } = state;
 
     try {
+      const recordData = records(state);
+
       // Note: we select the keys of the FIRST object as the canonical template.
-      const columns = Object.keys(records[0]);
-      const valueSets = records.map(
+      const columns = Object.keys(recordData[0]);
+      console.log(columns);
+      const valueSets = recordData.map(
         (x) => `('${Object.values(x).join("', '")}')`
       );
 
