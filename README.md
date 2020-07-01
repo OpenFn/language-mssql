@@ -60,8 +60,7 @@ upsert(
 
 // Note that insertMany takes a function which returns an array—this helps
 // enforce that each item in the array has the same keys.
-insertMany(
-  'SomeDB.dbo.Supplier',
+insertMany('SomeDB.dbo.Supplier', (state) =>
   state.data.supplierArray.map((s) => {
     return {
       SupplierNumber: s.id,
