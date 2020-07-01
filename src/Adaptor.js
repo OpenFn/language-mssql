@@ -1,8 +1,4 @@
-import {
-  execute as commonExecute,
-  expandReferences,
-  composeNextState,
-} from 'language-common';
+import { execute as commonExecute, expandReferences } from 'language-common';
 import { resolve as resolveUrl } from 'url';
 import { Connection, Request } from 'tedious';
 
@@ -93,6 +89,21 @@ function cleanupState(state) {
 }
 
 /**
+ * Sets the returned rows from a query as the first item in the state.references
+ * array, leaving state.data unchanged between operations.
+ * @function
+ * @param {State} state
+ * @param {array} rows - the array of rows returned from the sql query
+ * @returns {State}
+ */
+function addRowsToRefs(state, rows) {
+  return {
+    ...state,
+    references: [rows, ...state.references],
+  };
+}
+
+/**
  * Execute an SQL statement
  * @example
  * execute(
@@ -118,8 +129,7 @@ export function sql(params) {
             throw err;
           } else {
             console.log(`Finished: ${rowCount} row(s).`);
-            const nextState = composeNextState(state, rows);
-            resolve(nextState);
+            resolve(addRowsToRefs(state, rows));
           }
         });
 
@@ -188,8 +198,7 @@ export function insert(table, record, options) {
             throw err;
           } else {
             console.log(`Finished: ${rowCount} row(s).`);
-            const nextState = composeNextState(state, rows);
-            resolve(nextState);
+            resolve(addRowsToRefs(state, rows));
           }
         });
 
@@ -241,8 +250,7 @@ export function insertMany(table, records, options) {
             throw err;
           } else {
             console.log(`Finished: ${rowCount} row(s).`);
-            const nextState = composeNextState(state, rows);
-            resolve(nextState);
+            resolve(addRowsToRefs(state, rows));
           }
         });
 
@@ -307,8 +315,7 @@ export function upsert(table, uuid, record, options) {
             throw err;
           } else {
             console.log(`Finished: ${rowCount} row(s).`);
-            const nextState = composeNextState(state, rows);
-            resolve(nextState);
+            resolve(addRowsToRefs(state, rows));
           }
         });
 
