@@ -20,6 +20,7 @@ Language Pack for connecting to Azure SQL Server via OpenFn.
 
 ### Sample expression
 
+## sql query
 ```js
 sql({
   query: `
@@ -30,7 +31,11 @@ sql({
 });
 
 sql({ query: `SELECT * FROM Household` });
+```
 
+
+## Insert one single record
+```js
 insert(
   'SomeDB.dbo.SupplierTest',
   {
@@ -45,7 +50,11 @@ insert(
     setNull: "'undefined'",
   }
 );
+```
 
+## Insert or Update using a unique column as a key
+This function insert or update depending on the existence of a record in the database.
+```js
 upsert(
   'SomeDB.dbo.Supplier',
   'SupplierNumber',
@@ -57,7 +66,11 @@ upsert(
   // Do NOT replace any instances of 'undefined' in the final SQL statement.
   { setNull: false }
 );
+```
 
+## Insert Many records
+This function allows the insert of a set of records inside a table all at once.
+```js
 // Note that insertMany takes a function which returns an array—this helps
 // enforce that each item in the array has the same keys.
 insertMany('SomeDB.dbo.Supplier', (state) =>
