@@ -166,6 +166,10 @@ function handleOptions(options) {
   return (options && options.setNull) || "'undefined'";
 }
 
+function escapeQuote(stringExp) {
+  return stringExp.replace(/\'/g,"\\'");
+}
+
 /**
  * Insert a record
  * @example
@@ -296,7 +300,7 @@ export function upsert(table, uuid, record, options) {
         .join(', ');
 
       const updateValues = columns
-        .map(key => `[Target].${key}='${recordData[key]}'`)
+        .map(key => `[Target].${key}='${escapeQuote(recordData[key])}'`)
         .join(', ');
 
       const insertColumns = columns.join(', ');
