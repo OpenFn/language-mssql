@@ -34,7 +34,7 @@ function createConnection(state) {
 
   // Attempt to connect and execute queries if connection goes through
   return new Promise((resolve, reject) => {
-    connection.on('connect', (err) => {
+    connection.on('connect', err => {
       if (err) {
         console.error(err.message);
         reject(err);
@@ -63,12 +63,16 @@ export function execute(...operations) {
     data: null,
   };
 
-  return (state) => {
+  return state => {
     return commonExecute(
       createConnection,
       ...operations,
       cleanupState
-    )({ ...initialState, ...state });
+    )({ ...initialState, ...state }).catch(e => {
+      console.error(e);
+      console.error('Unhandled error in the operations. Exiting process.');
+      process.exit(1);
+    });
   };
 }
 
@@ -114,7 +118,7 @@ function addRowsToRefs(state, rows) {
  * @returns {Operation}
  */
 export function sql(params) {
-  return (state) => {
+  return state => {
     const { connection } = state;
 
     try {
@@ -175,14 +179,14 @@ function handleOptions(options) {
  * @returns {Operation}
  */
 export function insert(table, record, options) {
-  return (state) => {
+  return state => {
     const { connection } = state;
 
     try {
       const recordData = expandReferences(record)(state);
 
       const columns = Object.keys(recordData).sort();
-      const values = columns.map((key) => recordData[key]).join("', '");
+      const values = columns.map(key => recordData[key]).join("', '");
 
       const query = handleValues(
         `INSERT INTO ${table} (${columns.join(', ')}) VALUES ('${values}');`,
@@ -224,7 +228,7 @@ export function insert(table, record, options) {
  * @returns {Operation}
  */
 export function insertMany(table, records, options) {
-  return (state) => {
+  return state => {
     const { connection } = state;
 
     try {
@@ -234,7 +238,7 @@ export function insertMany(table, records, options) {
       const columns = Object.keys(recordData[0]);
       console.log(columns);
       const valueSets = recordData.map(
-        (x) => `('${Object.values(x).join("', '")}')`
+        x => `('${Object.values(x).join("', '")}')`
       );
 
       const query = handleValues(
@@ -280,7 +284,7 @@ export function insertMany(table, records, options) {
  * @returns {Operation}
  */
 export function upsert(table, uuid, record, options) {
-  return (state) => {
+  return state => {
     const { connection } = state;
 
     try {
@@ -288,15 +292,15 @@ export function upsert(table, uuid, record, options) {
       const columns = Object.keys(recordData).sort();
 
       const selectValues = columns
-        .map((key) => `'${recordData[key]}' AS ${key}`)
+        .map(key => `'${recordData[key]}' AS ${key}`)
         .join(', ');
 
       const updateValues = columns
-        .map((key) => `[Target].${key}='${recordData[key]}'`)
+        .map(key => `[Target].${key}='${recordData[key]}'`)
         .join(', ');
 
       const insertColumns = columns.join(', ');
-      const insertValues = columns.map((key) => `[Source].${key}`).join(', ');
+      const insertValues = columns.map(key => `[Source].${key}`).join(', ');
 
       const query = handleValues(
         `MERGE ${table} AS [Target]
