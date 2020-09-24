@@ -167,7 +167,11 @@ function handleOptions(options) {
 }
 
 function escapeQuote(stringExp) {
-  return stringExp.replace(/\'/g,"\\'");
+  if (typeof stringExp !== 'string') {
+    return stringExp;
+  }
+
+  return stringExp.replace(/\'/g, "''");
 }
 
 /**
@@ -296,7 +300,7 @@ export function upsert(table, uuid, record, options) {
       const columns = Object.keys(recordData).sort();
 
       const selectValues = columns
-        .map(key => `'${recordData[key]}' AS ${key}`)
+        .map(key => `'${escapeQuote(recordData[key])}' AS ${key}`)
         .join(', ');
 
       const updateValues = columns
