@@ -169,8 +169,7 @@ function handleOptions(options) {
 function escapeQuote(stringExp) {
   if (typeof stringExp === 'object' && stringExp !== null) {
     return Object.values(stringExp).map(x => escapeQuote(x));
-  }
-  if (typeof stringExp !== 'string') {
+  } else if (typeof stringExp !== 'string') {
     return stringExp;
   }
 
