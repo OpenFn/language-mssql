@@ -167,6 +167,9 @@ function handleOptions(options) {
 }
 
 function escapeQuote(stringExp) {
+  if (typeof stringExp === 'object' && stringExp !== null) {
+    return Object.values(stringExp).map(x => escapeQuote(x));
+  }
   if (typeof stringExp !== 'string') {
     return stringExp;
   }
@@ -194,7 +197,9 @@ export function insert(table, record, options) {
       const recordData = expandReferences(record)(state);
 
       const columns = Object.keys(recordData).sort();
-      const values = columns.map(key => recordData[key]).join("', '");
+      const values = columns
+        .map(key => escapeQuote(recordData[key]))
+        .join("', '");
 
       const query = handleValues(
         `INSERT INTO ${table} (${columns.join(', ')}) VALUES ('${values}');`,
@@ -244,11 +249,10 @@ export function insertMany(table, records, options) {
 
       // Note: we select the keys of the FIRST object as the canonical template.
       const columns = Object.keys(recordData[0]);
-      console.log(columns);
-      const valueSets = recordData.map(
-        x => `('${Object.values(x).join("', '")}')`
-      );
 
+      const valueSets = recordData.map(
+        x => `('${escapeQuote(Object.values(x)).join("', '")}')`
+      );
       const query = handleValues(
         `INSERT INTO ${table} (${columns.join(', ')}) VALUES ${valueSets.join(
           ', '
