@@ -205,8 +205,12 @@ export function insert(table, record, options) {
         handleOptions(options)
       );
 
+      const safeQuery = `INSERT INTO ${table} (${columns.join(
+        ', '
+      )}) VALUES [--REDACTED--]];`;
+
       return new Promise((resolve, reject) => {
-        console.log(`Executing insert via: ${query}`);
+        console.log(`Executing insert via: ${safeQuery}`);
 
         const request = new Request(query, (err, rowCount, rows) => {
           if (err) {
@@ -259,8 +263,12 @@ export function insertMany(table, records, options) {
         handleOptions(options)
       );
 
+      const safeQuery = `INSERT INTO ${table} (${columns.join(
+        ', '
+      )}) VALUES [--REDACTED--]];`;
+
       return new Promise((resolve, reject) => {
-        console.log(`Executing insert many via: ${query}`);
+        console.log(`Executing insert many via: ${safeQuery}`);
 
         const request = new Request(query, (err, rowCount, rows) => {
           if (err) {
@@ -324,8 +332,16 @@ export function upsert(table, uuid, record, options) {
         handleOptions(options)
       );
 
+      const safeQuery = `MERGE ${table} AS [Target]
+        USING (SELECT [--REDACTED--]) 
+        ON [Target].[--VALUE--] = [Source].[--VALUE--]
+        WHEN MATCHED THEN
+          UPDATE SET [--REDACTED--] 
+        WHEN NOT MATCHED THEN
+          INSERT (${insertColumns}) VALUES [--REDACTED--];`;
+
       return new Promise((resolve, reject) => {
-        console.log(`Executing upsert via : ${query}`);
+        console.log(`Executing upsert via : ${safeQuery}`);
 
         const request = new Request(query, (err, rowCount, rows) => {
           if (err) {
