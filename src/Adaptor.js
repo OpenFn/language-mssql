@@ -235,7 +235,7 @@ export function insert(table, record, options) {
  * Insert many records, using the keys of the first as the column template
  * @example
  * execute(
- *   insert(table, records, { setNull: false })
+ *   insertMany(table, records, { setNull: false })
  * )(state)
  * @constructor
  * @param {string} table - The target table
@@ -334,6 +334,80 @@ export function upsert(table, uuid, record, options) {
 
       const safeQuery = `MERGE ${table} AS [Target]
         USING (SELECT [--REDACTED--]) 
+        ON [Target].[--VALUE--] = [Source].[--VALUE--]
+        WHEN MATCHED THEN
+          UPDATE SET [--REDACTED--] 
+        WHEN NOT MATCHED THEN
+          INSERT (${insertColumns}) VALUES [--REDACTED--];`;
+
+      return new Promise((resolve, reject) => {
+        console.log(`Executing upsert via : ${safeQuery}`);
+
+        const request = new Request(query, (err, rowCount, rows) => {
+          if (err) {
+            console.error(err.message);
+            throw err;
+          } else {
+            console.log(`Finished: ${rowCount} row(s).`);
+            resolve(addRowsToRefs(state, rows));
+          }
+        });
+
+        connection.execSql(request);
+      });
+    } catch (e) {
+      connection.close();
+      throw e;
+    }
+  };
+}
+
+/**
+ * Insert or update multiple records using ON CONFLICT UPDATE and excluded
+ * @example
+ * upsertMany(
+ *  'users', 'email', records
+ * )
+ * @constructor
+ * @param {string} table - The target table
+ * @param {string} uuid - The uuid column to determine a matching/existing record
+ * @param {function} records - A function that takes state and returns an array of records
+ * @param {object} options - Optional options argument
+ * @returns {Operation}
+ */
+export function upsertMany(table, uuid, records, options) {
+  return state => {
+    const { connection } = state;
+
+    try {
+      const recordData = records(state);
+
+      // Note: we select the keys of the FIRST object as the canonical template.
+      const columns = Object.keys(recordData[0]);
+
+      const valueSets = recordData.map(
+        x => `('${escapeQuote(Object.values(x)).join("', '")}')`
+      );
+      const insertColumns = columns.join(', ');
+      const insertValues = columns.map(key => `[Source].${key}`).join(', ');
+
+      const updateValues = columns
+        .map(key => `[Target].${key}=[Source].${key}`)
+        .join(', ');
+
+      const query = handleValues(
+        `MERGE ${table} AS [Target]
+        USING (VALUES ${valueSets.join(', ')}) AS [Source] (${insertColumns})
+        ON [Target].${uuid} = [Source].${uuid}
+        WHEN MATCHED THEN
+          UPDATE SET ${updateValues}
+        WHEN NOT MATCHED THEN
+          INSERT (${insertColumns}) VALUES (${insertValues});`,
+        handleOptions(options)
+      );
+
+      const safeQuery = `MERGE ${table} AS [Target]
+        USING (VALUES [--REDACTED--]) AS [SOURCE] (${insertColumns})
         ON [Target].[--VALUE--] = [Source].[--VALUE--]
         WHEN MATCHED THEN
           UPDATE SET [--REDACTED--] 
