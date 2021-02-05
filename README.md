@@ -21,6 +21,7 @@ Language Pack for connecting to Azure SQL Server via OpenFn.
 ### Sample expression
 
 ## sql query
+
 ```js
 sql({
   query: `
@@ -33,8 +34,8 @@ sql({
 sql({ query: `SELECT * FROM Household` });
 ```
 
-
 ## Insert one single record
+
 ```js
 insert(
   'SomeDB.dbo.SupplierTest',
@@ -53,7 +54,9 @@ insert(
 ```
 
 ## Insert or Update using a unique column as a key
+
 This function insert or update depending on the existence of a record in the database.
+
 ```js
 upsert(
   'SomeDB.dbo.Supplier',
@@ -69,12 +72,32 @@ upsert(
 ```
 
 ## Insert Many records
+
 This function allows the insert of a set of records inside a table all at once.
+
 ```js
 // Note that insertMany takes a function which returns an array—this helps
 // enforce that each item in the array has the same keys.
-insertMany('SomeDB.dbo.Supplier', (state) =>
-  state.data.supplierArray.map((s) => {
+insertMany('SomeDB.dbo.Supplier', state =>
+  state.data.supplierArray.map(s => {
+    return {
+      SupplierNumber: s.id,
+      Name: s.name,
+      Address: s.address,
+    };
+  })
+);
+```
+
+## Insert or Update Many records
+
+This function inserts or updates many records all at once depending on their existence in the database.
+
+```js
+// Note that insertMany takes a function which returns an array—this helps
+// enforce that each item in the array has the same keys.
+upsertMany('SomeDB.dbo.Supplier', 'SupplierNumber', state =>
+  state.data.supplierArray.map(s => {
     return {
       SupplierNumber: s.id,
       Name: s.name,
@@ -91,3 +114,5 @@ Clone the repo, run `npm install`.
 Run tests using `npm run test` or `npm run test:watch`
 
 Build the project using `make`.
+
+To build the docs for this repo, run `./node_modules/.bin/jsdoc --readme ./README.md ./lib -d docs`.
