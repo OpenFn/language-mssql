@@ -1,8 +1,13 @@
 {
-  "name": "language-mssql",
+  "name": "@openfn/language-mssql",
   "version": "2.2.0",
   "description": "A Microsoft SQL language pack for OpenFn",
   "main": "lib/index.js",
+  "homepage": "https://docs.openfn.org",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/openfn/language-mssql.git"
+  },
   "scripts": {
     "build": "make",
     "test": "mocha --require @babel/register",
@@ -14,7 +19,7 @@
     "lib/"
   ],
   "dependencies": {
-    "language-common": "github:openfn/language-common#v0.3.0",
+    "@openfn/language-common": "1.2.6",
     "request": "2.88.0",
     "tedious": "8.0.1"
   },

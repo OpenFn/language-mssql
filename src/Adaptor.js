@@ -1,4 +1,7 @@
-import { execute as commonExecute, expandReferences } from 'language-common';
+import {
+  execute as commonExecute,
+  expandReferences,
+} from '@openfn/language-common';
 import { resolve as resolveUrl } from 'url';
 import { Connection, Request } from 'tedious';
 
@@ -438,11 +441,14 @@ export function upsertMany(table, uuid, records, options) {
 
 export {
   alterState,
-  field,
-  fields,
-  sourceValue,
-  merge,
+  combine,
   dataPath,
   dataValue,
+  each,
+  field,
+  fields,
+  http,
   lastReferenceValue,
-} from 'language-common';
+  merge,
+  sourceValue,
+} from '@openfn/language-common';
