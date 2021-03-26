@@ -251,7 +251,7 @@ export function insertMany(table, records, options) {
     const { connection } = state;
 
     try {
-      const recordData = records(state);
+      const recordData = expandReferences(records)(state);
 
       // Note: we select the keys of the FIRST object as the canonical template.
       const columns = Object.keys(recordData[0]);
@@ -383,7 +383,7 @@ export function upsertMany(table, uuid, records, options) {
     const { connection } = state;
 
     try {
-      const recordData = records(state);
+      const recordData = expandReferences(records)(state);
 
       // Note: we select the keys of the FIRST object as the canonical template.
       const columns = Object.keys(recordData[0]);
