@@ -112,6 +112,7 @@ function addRowsToRefs(state, rows) {
 
 /**
  * Execute an SQL statement
+ * @public
  * @example
  * execute(
  *   sql(sqlQuery)
@@ -181,6 +182,7 @@ function escapeQuote(stringExp) {
 
 /**
  * Insert a record
+ * @public
  * @example
  * execute(
  *   insert(table, record, {setNull: "'undefined'"})
@@ -236,6 +238,7 @@ export function insert(table, record, options) {
 
 /**
  * Insert many records, using the keys of the first as the column template
+ * @public
  * @example
  * execute(
  *   insertMany(table, records, { setNull: false })
@@ -294,6 +297,7 @@ export function insertMany(table, records, options) {
 
 /**
  * Insert or update a record using SQL MERGE
+ * @public
  * @example
  * execute(
  *   upsert(table, uuid, record, { setNull: "'undefined'"})
@@ -367,6 +371,7 @@ export function upsert(table, uuid, record, options) {
 
 /**
  * Insert or update multiple records using ON CONFLICT UPDATE and excluded
+ * @public
  * @example
  * upsertMany(
  *  'users', 'email', records
