@@ -195,7 +195,7 @@ function escapeQuote(stringExp) {
  */
 export function findValue(filter) {
   return state => {
-    let { client } = state;
+    const { connection } = state;
 
     const { uuid, relation, where } = filter;
 
@@ -210,11 +210,12 @@ export function findValue(filter) {
       let returnValue = null;
 
       return new Promise((resolve, reject) => {
-        client.query(body, (err, result) => {
+        console.log(`Executing query: ${body}`);
+
+        const request = new Request(body, (err, rowCount, rows) => {
           if (err) {
-            console.log(err);
-            reject(err);
-            client.end();
+            console.error(err.message);
+            throw err;
           } else {
             if (result.rows.length > 0) {
               returnValue = result.rows[0][uuid];
@@ -222,9 +223,10 @@ export function findValue(filter) {
             resolve(returnValue);
           }
         });
+        connection.execSql(request);
       });
     } catch (e) {
-      client.end();
+      connection.close();
       throw e;
     }
   };
