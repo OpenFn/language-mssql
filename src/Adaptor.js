@@ -181,6 +181,56 @@ function escapeQuote(stringExp) {
 }
 
 /**
+ * Fetch a uuid key given a condition
+ * @public
+ * @example
+ * findValue({
+ *    uuid: 'id',
+ *    relation: 'users',
+ *    where: { first_name: 'Mamadou' },
+ *  })
+ * @constructor
+ * @param {object} filter - A filter object with the lookup table, a uuid and the condition
+ * @returns {Operation}
+ */
+export function findValue(filter) {
+  return state => {
+    let { client } = state;
+
+    const { uuid, relation, where } = filter;
+
+    let conditionsArray = [];
+    for (let key in where) conditionsArray.push(`${key} = '${where[key]}'`);
+    const condition = conditionsArray.join(' and '); // In a near future the 'and' can live in the filter.
+
+    try {
+      const body = `select ${uuid} from ${relation} where ${condition}`;
+
+      console.log('Preparing to execute sql statement');
+      let returnValue = null;
+
+      return new Promise((resolve, reject) => {
+        client.query(body, (err, result) => {
+          if (err) {
+            console.log(err);
+            reject(err);
+            client.end();
+          } else {
+            if (result.rows.length > 0) {
+              returnValue = result.rows[0][uuid];
+            }
+            resolve(returnValue);
+          }
+        });
+      });
+    } catch (e) {
+      client.end();
+      throw e;
+    }
+  };
+}
+
+/**
  * Insert a record
  * @public
  * @example
