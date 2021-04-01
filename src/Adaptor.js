@@ -118,7 +118,7 @@ function addRowsToRefs(state, rows) {
  *   sql(sqlQuery)
  * )(state)
  * @constructor
- * @param {object} sqlQuery - Payload data for the message
+ * @param {object} params - Payload data for the message
  * @returns {Operation}
  */
 export function sql(params) {
