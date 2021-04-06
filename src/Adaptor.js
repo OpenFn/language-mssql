@@ -167,7 +167,7 @@ function handleOptions(options) {
   if (options && options.setNull === false) {
     return false;
   }
-  return (options && options.setNull) || "'undefined'";
+  return (options && options.setNull) || 'undefined';
 }
 
 function escapeQuote(stringExp) {
@@ -217,8 +217,8 @@ export function findValue(filter) {
             console.error(err.message);
             throw err;
           } else {
-            if (result.rows.length > 0) {
-              returnValue = result.rows[0][uuid];
+            if (rows.length > 0) {
+              returnValue = rows[0][0].value;
             }
             resolve(returnValue);
           }
@@ -369,12 +369,13 @@ export function upsert(table, uuid, record, options) {
       const recordData = expandReferences(record)(state);
       const columns = Object.keys(recordData).sort();
 
+      console.log(recordData);
       const selectValues = columns
-        .map(key => `'${escapeQuote(recordData[key])}' AS ${key}`)
+        .map(key => `${escapeQuote(recordData[key])} AS ${key}`)
         .join(', ');
 
       const updateValues = columns
-        .map(key => `[Target].${key}='${escapeQuote(recordData[key])}'`)
+        .map(key => `[Target].${key}=${escapeQuote(recordData[key])}`)
         .join(', ');
 
       const insertColumns = columns.join(', ');
@@ -400,7 +401,7 @@ export function upsert(table, uuid, record, options) {
           INSERT (${insertColumns}) VALUES [--REDACTED--];`;
 
       return new Promise((resolve, reject) => {
-        console.log(`Executing upsert via : ${safeQuery}`);
+        console.log(`Executing upsert via : ${query}`);
 
         const request = new Request(query, (err, rowCount, rows) => {
           if (err) {
