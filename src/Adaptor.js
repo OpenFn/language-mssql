@@ -201,7 +201,8 @@ export function findValue(filter) {
     const whereData = expandReferences(where)(state);
 
     let conditionsArray = [];
-    for (let key in whereData) conditionsArray.push(`${key} = '${whereData[key]}'`);
+    for (let key in whereData)
+      conditionsArray.push(`${key} = '${whereData[key]}'`);
     const condition = conditionsArray.join(' and '); // In a near future the 'and' can live in the filter.
 
     try {
@@ -222,6 +223,7 @@ export function findValue(filter) {
             if (rows.length > 0) {
               returnValue = rows[0][0].value;
             }
+            if (returnValue === null) resolve(undefined);
             resolve(returnValue);
           }
         });
