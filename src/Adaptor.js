@@ -373,11 +373,11 @@ export function upsert(table, uuid, record, options) {
 
       // console.log(recordData);
       const selectValues = columns
-        .map(key => `${escapeQuote(recordData[key])} AS ${key}`)
+        .map(key => `'${escapeQuote(recordData[key])}' AS ${key}`)
         .join(', ');
 
       const updateValues = columns
-        .map(key => `[Target].${key}=${escapeQuote(recordData[key])}`)
+        .map(key => `[Target].${key}='${escapeQuote(recordData[key])}'`)
         .join(', ');
 
       const insertColumns = columns.join(', ');
