@@ -167,7 +167,7 @@ function handleOptions(options) {
   if (options && options.setNull === false) {
     return false;
   }
-  return (options && options.setNull) || 'undefined';
+  return (options && options.setNull) || "'undefined'";
 }
 
 function escapeQuote(stringExp) {
