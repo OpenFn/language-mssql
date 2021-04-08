@@ -205,6 +205,7 @@ export function findValue(filter) {
 
     try {
       const body = `select ${uuid} from ${relation} where ${condition}`;
+      console.log('body', body);
 
       console.log('Preparing to execute sql statement');
       let returnValue = null;
@@ -369,7 +370,7 @@ export function upsert(table, uuid, record, options) {
       const recordData = expandReferences(record)(state);
       const columns = Object.keys(recordData).sort();
 
-      console.log(recordData);
+      // console.log(recordData);
       const selectValues = columns
         .map(key => `${escapeQuote(recordData[key])} AS ${key}`)
         .join(', ');
