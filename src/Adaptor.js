@@ -198,9 +198,10 @@ export function findValue(filter) {
     const { connection } = state;
 
     const { uuid, relation, where } = filter;
+    const whereData = expandReferences(where)(state);
 
     let conditionsArray = [];
-    for (let key in where) conditionsArray.push(`${key} = '${where[key]}'`);
+    for (let key in whereData) conditionsArray.push(`${key} = '${whereData[key]}'`);
     const condition = conditionsArray.join(' and '); // In a near future the 'and' can live in the filter.
 
     try {
