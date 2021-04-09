@@ -445,31 +445,37 @@ export function upsertMany(table, uuid, records, options) {
     try {
       const recordData = expandReferences(records)(state);
 
-      // Note: we select the keys of the FIRST object as the canonical template.
-      const columns = Object.keys(recordData[0]);
+      return new Promise((resolve, reject) => {
+        if (!recordData || recordData.length === 0) {
+          console.log('No records provided; skipping upsert.');
+          resolve(state);
+        }
 
-      const valueSets = recordData.map(
-        x => `('${escapeQuote(Object.values(x)).join("', '")}')`
-      );
-      const insertColumns = columns.join(', ');
-      const insertValues = columns.map(key => `[Source].${key}`).join(', ');
+        // Note: we select the keys of the FIRST object as the canonical template.
+        const columns = Object.keys(recordData[0]);
 
-      const updateValues = columns
-        .map(key => `[Target].${key}=[Source].${key}`)
-        .join(', ');
+        const valueSets = recordData.map(
+          x => `('${escapeQuote(Object.values(x)).join("', '")}')`
+        );
+        const insertColumns = columns.join(', ');
+        const insertValues = columns.map(key => `[Source].${key}`).join(', ');
 
-      const query = handleValues(
-        `MERGE ${table} AS [Target]
+        const updateValues = columns
+          .map(key => `[Target].${key}=[Source].${key}`)
+          .join(', ');
+
+        const query = handleValues(
+          `MERGE ${table} AS [Target]
         USING (VALUES ${valueSets.join(', ')}) AS [Source] (${insertColumns})
         ON [Target].${uuid} = [Source].${uuid}
         WHEN MATCHED THEN
           UPDATE SET ${updateValues}
         WHEN NOT MATCHED THEN
           INSERT (${insertColumns}) VALUES (${insertValues});`,
-        handleOptions(options)
-      );
+          handleOptions(options)
+        );
 
-      const safeQuery = `MERGE ${table} AS [Target]
+        const safeQuery = `MERGE ${table} AS [Target]
         USING (VALUES [--REDACTED--]) AS [SOURCE] (${insertColumns})
         ON [Target].[--VALUE--] = [Source].[--VALUE--]
         WHEN MATCHED THEN
@@ -477,7 +483,6 @@ export function upsertMany(table, uuid, records, options) {
         WHEN NOT MATCHED THEN
           INSERT (${insertColumns}) VALUES [--REDACTED--];`;
 
-      return new Promise((resolve, reject) => {
         console.log(`Executing upsert via : ${safeQuery}`);
 
         const request = new Request(query, (err, rowCount, rows) => {
