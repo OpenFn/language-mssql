@@ -167,7 +167,7 @@ function handleOptions(options) {
   if (options && options.setNull === false) {
     return false;
   }
-  return (options && options.setNull) || 'undefined';
+  return (options && options.setNull) || "'undefined'";
 }
 
 function escapeQuote(stringExp) {
@@ -198,9 +198,11 @@ export function findValue(filter) {
     const { connection } = state;
 
     const { uuid, relation, where } = filter;
+    const whereData = expandReferences(where)(state);
 
     let conditionsArray = [];
-    for (let key in where) conditionsArray.push(`${key} = '${where[key]}'`);
+    for (let key in whereData)
+      conditionsArray.push(`${key} = '${whereData[key]}'`);
     const condition = conditionsArray.join(' and '); // In a near future the 'and' can live in the filter.
 
     try {
@@ -220,6 +222,7 @@ export function findValue(filter) {
             if (rows.length > 0) {
               returnValue = rows[0][0].value;
             }
+            if (returnValue === null) resolve(undefined);
             resolve(returnValue);
           }
         });
@@ -369,13 +372,12 @@ export function upsert(table, uuid, record, options) {
       const recordData = expandReferences(record)(state);
       const columns = Object.keys(recordData).sort();
 
-      console.log(recordData);
       const selectValues = columns
-        .map(key => `${escapeQuote(recordData[key])} AS ${key}`)
+        .map(key => `'${escapeQuote(recordData[key])}' AS ${key}`)
         .join(', ');
 
       const updateValues = columns
-        .map(key => `[Target].${key}=${escapeQuote(recordData[key])}`)
+        .map(key => `[Target].${key}='${escapeQuote(recordData[key])}'`)
         .join(', ');
 
       const insertColumns = columns.join(', ');
@@ -401,7 +403,7 @@ export function upsert(table, uuid, record, options) {
           INSERT (${insertColumns}) VALUES [--REDACTED--];`;
 
       return new Promise((resolve, reject) => {
-        console.log(`Executing upsert via : ${query}`);
+        console.log(`Executing upsert via : ${safeQuery}`);
 
         const request = new Request(query, (err, rowCount, rows) => {
           if (err) {
