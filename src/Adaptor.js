@@ -205,10 +205,14 @@ export function findValue(filter) {
     let conditionsArray = [];
     for (let key in whereData)
       conditionsArray.push(`${key} ${operatorData[key]} '${whereData[key]}'`);
-    const condition = conditionsArray.join(' and '); // In a near future the 'and' can live in the filter.
+
+    const condition =
+      conditionsArray.length > 0
+        ? `where ${conditionsArray.join(' and ')}`
+        : ''; // In a near future the 'and' can live in the filter.
 
     try {
-      const body = `select ${uuid} from ${relation} where ${condition}`;
+      const body = `select ${uuid} from ${relation} ${condition}`;
 
       console.log('Preparing to execute sql statement');
       let returnValue = null;
