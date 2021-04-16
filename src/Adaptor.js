@@ -187,7 +187,8 @@ function escapeQuote(stringExp) {
  * findValue({
  *    uuid: 'id',
  *    relation: 'users',
- *    where: { first_name: 'Mamadou' },
+ *    where: { first_name: 'Mama%', last_name: 'Cisse'},
+ *    operator: { first_name: 'like', last_name: '='}
  *  })
  * @constructor
  * @param {object} filter - A filter object with the lookup table, a uuid and the condition
@@ -197,12 +198,13 @@ export function findValue(filter) {
   return state => {
     const { connection } = state;
 
-    const { uuid, relation, where } = filter;
+    const { uuid, relation, where, operator } = filter;
     const whereData = expandReferences(where)(state);
+    const operatorData = expandReferences(operator)(state);
 
     let conditionsArray = [];
     for (let key in whereData)
-      conditionsArray.push(`${key} = '${whereData[key]}'`);
+      conditionsArray.push(`${key} ${operatorData[key]} '${whereData[key]}'`);
     const condition = conditionsArray.join(' and '); // In a near future the 'and' can live in the filter.
 
     try {
