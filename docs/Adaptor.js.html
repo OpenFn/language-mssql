@@ -33,6 +33,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.execute = execute;
 exports.sql = sql;
+exports.findValue = findValue;
 exports.insert = insert;
 exports.insertMany = insertMany;
 exports.upsert = upsert;
@@ -43,28 +44,10 @@ Object.defineProperty(exports, "alterState", {
     return _languageCommon.alterState;
   }
 });
-Object.defineProperty(exports, "field", {
+Object.defineProperty(exports, "combine", {
   enumerable: true,
   get: function get() {
-    return _languageCommon.field;
-  }
-});
-Object.defineProperty(exports, "fields", {
-  enumerable: true,
-  get: function get() {
-    return _languageCommon.fields;
-  }
-});
-Object.defineProperty(exports, "sourceValue", {
-  enumerable: true,
-  get: function get() {
-    return _languageCommon.sourceValue;
-  }
-});
-Object.defineProperty(exports, "merge", {
-  enumerable: true,
-  get: function get() {
-    return _languageCommon.merge;
+    return _languageCommon.combine;
   }
 });
 Object.defineProperty(exports, "dataPath", {
@@ -79,14 +62,50 @@ Object.defineProperty(exports, "dataValue", {
     return _languageCommon.dataValue;
   }
 });
+Object.defineProperty(exports, "each", {
+  enumerable: true,
+  get: function get() {
+    return _languageCommon.each;
+  }
+});
+Object.defineProperty(exports, "field", {
+  enumerable: true,
+  get: function get() {
+    return _languageCommon.field;
+  }
+});
+Object.defineProperty(exports, "fields", {
+  enumerable: true,
+  get: function get() {
+    return _languageCommon.fields;
+  }
+});
+Object.defineProperty(exports, "http", {
+  enumerable: true,
+  get: function get() {
+    return _languageCommon.http;
+  }
+});
 Object.defineProperty(exports, "lastReferenceValue", {
   enumerable: true,
   get: function get() {
     return _languageCommon.lastReferenceValue;
   }
 });
+Object.defineProperty(exports, "merge", {
+  enumerable: true,
+  get: function get() {
+    return _languageCommon.merge;
+  }
+});
+Object.defineProperty(exports, "sourceValue", {
+  enumerable: true,
+  get: function get() {
+    return _languageCommon.sourceValue;
+  }
+});
 
-var _languageCommon = require("language-common");
+var _languageCommon = require("@openfn/language-common");
 
 var _url = require("url");
 
@@ -227,12 +246,13 @@ function addRowsToRefs(state, rows) {
 }
 /**
  * Execute an SQL statement
+ * @public
  * @example
  * execute(
  *   sql(sqlQuery)
  * )(state)
  * @constructor
- * @param {object} sqlQuery - Payload data for the message
+ * @param {object} params - Payload data for the message
  * @returns {Operation}
  */
 
@@ -299,7 +319,68 @@ function escapeQuote(stringExp) {
   return stringExp.replace(/\'/g, "''");
 }
 /**
+ * Fetch a uuid key given a condition
+ * @public
+ * @example
+ * findValue({
+ *    uuid: 'id',
+ *    relation: 'users',
+ *    where: { first_name: 'Mama%', last_name: 'Cisse'},
+ *    operator: { first_name: 'like', last_name: '='}
+ *  })
+ * @constructor
+ * @param {object} filter - A filter object with the lookup table, a uuid and the condition
+ * @returns {Operation}
+ */
+
+
+function findValue(filter) {
+  return function (state) {
+    var connection = state.connection;
+    var uuid = filter.uuid,
+        relation = filter.relation,
+        where = filter.where,
+        operator = filter.operator;
+    var whereData = (0, _languageCommon.expandReferences)(where)(state);
+    var operatorData = (0, _languageCommon.expandReferences)(operator)(state);
+    var conditionsArray = [];
+
+    for (var key in whereData) {
+      conditionsArray.push("".concat(key, " ").concat(operatorData ? operatorData[key] : '=', " '").concat(whereData[key], "'"));
+    }
+
+    var condition = conditionsArray.length > 0 ? "where ".concat(conditionsArray.join(' and ')) : ''; // In a near future the 'and' can live in the filter.
+
+    try {
+      var body = "select ".concat(uuid, " from ").concat(relation, " ").concat(condition);
+      console.log('Preparing to execute sql statement');
+      var returnValue = null;
+      return new Promise(function (resolve, reject) {
+        console.log("Executing query: ".concat(body));
+        var request = new _tedious.Request(body, function (err, rowCount, rows) {
+          if (err) {
+            console.error(err.message);
+            throw err;
+          } else {
+            if (rows.length > 0) {
+              returnValue = rows[0][0].value;
+            }
+
+            if (returnValue === null) resolve(undefined);
+            resolve(returnValue);
+          }
+        });
+        connection.execSql(request);
+      });
+    } catch (e) {
+      connection.close();
+      throw e;
+    }
+  };
+}
+/**
  * Insert a record
+ * @public
  * @example
  * execute(
  *   insert(table, record, {setNull: "'undefined'"})
@@ -345,6 +426,7 @@ function insert(table, record, options) {
 }
 /**
  * Insert many records, using the keys of the first as the column template
+ * @public
  * @example
  * execute(
  *   insertMany(table, records, { setNull: false })
@@ -362,7 +444,7 @@ function insertMany(table, records, options) {
     var connection = state.connection;
 
     try {
-      var recordData = records(state); // Note: we select the keys of the FIRST object as the canonical template.
+      var recordData = (0, _languageCommon.expandReferences)(records)(state); // Note: we select the keys of the FIRST object as the canonical template.
 
       var columns = Object.keys(recordData[0]);
       var valueSets = recordData.map(function (x) {
@@ -391,6 +473,7 @@ function insertMany(table, records, options) {
 }
 /**
  * Insert or update a record using SQL MERGE
+ * @public
  * @example
  * execute(
  *   upsert(table, uuid, record, { setNull: "'undefined'"})
@@ -444,6 +527,7 @@ function upsert(table, uuid, record, options) {
 }
 /**
  * Insert or update multiple records using ON CONFLICT UPDATE and excluded
+ * @public
  * @example
  * upsertMany(
  *  'users', 'email', records
@@ -462,22 +546,27 @@ function upsertMany(table, uuid, records, options) {
     var connection = state.connection;
 
     try {
-      var recordData = records(state); // Note: we select the keys of the FIRST object as the canonical template.
-
-      var columns = Object.keys(recordData[0]);
-      var valueSets = recordData.map(function (x) {
-        return "('".concat(escapeQuote(Object.values(x)).join("', '"), "')");
-      });
-      var insertColumns = columns.join(', ');
-      var insertValues = columns.map(function (key) {
-        return "[Source].".concat(key);
-      }).join(', ');
-      var updateValues = columns.map(function (key) {
-        return "[Target].".concat(key, "=[Source].").concat(key);
-      }).join(', ');
-      var query = handleValues("MERGE ".concat(table, " AS [Target]\n        USING (VALUES ").concat(valueSets.join(', '), ") AS [Source] (").concat(insertColumns, ")\n        ON [Target].").concat(uuid, " = [Source].").concat(uuid, "\n        WHEN MATCHED THEN\n          UPDATE SET ").concat(updateValues, "\n        WHEN NOT MATCHED THEN\n          INSERT (").concat(insertColumns, ") VALUES (").concat(insertValues, ");"), handleOptions(options));
-      var safeQuery = "MERGE ".concat(table, " AS [Target]\n        USING (VALUES [--REDACTED--]) AS [SOURCE] (").concat(insertColumns, ")\n        ON [Target].[--VALUE--] = [Source].[--VALUE--]\n        WHEN MATCHED THEN\n          UPDATE SET [--REDACTED--] \n        WHEN NOT MATCHED THEN\n          INSERT (").concat(insertColumns, ") VALUES [--REDACTED--];");
+      var recordData = (0, _languageCommon.expandReferences)(records)(state);
       return new Promise(function (resolve, reject) {
+        if (!recordData || recordData.length === 0) {
+          console.log('No records provided; skipping upsert.');
+          resolve(state);
+        } // Note: we select the keys of the FIRST object as the canonical template.
+
+
+        var columns = Object.keys(recordData[0]);
+        var valueSets = recordData.map(function (x) {
+          return "('".concat(escapeQuote(Object.values(x)).join("', '"), "')");
+        });
+        var insertColumns = columns.join(', ');
+        var insertValues = columns.map(function (key) {
+          return "[Source].".concat(key);
+        }).join(', ');
+        var updateValues = columns.map(function (key) {
+          return "[Target].".concat(key, "=[Source].").concat(key);
+        }).join(', ');
+        var query = handleValues("MERGE ".concat(table, " AS [Target]\n        USING (VALUES ").concat(valueSets.join(', '), ") AS [Source] (").concat(insertColumns, ")\n        ON [Target].").concat(uuid, " = [Source].").concat(uuid, "\n        WHEN MATCHED THEN\n          UPDATE SET ").concat(updateValues, "\n        WHEN NOT MATCHED THEN\n          INSERT (").concat(insertColumns, ") VALUES (").concat(insertValues, ");"), handleOptions(options));
+        var safeQuery = "MERGE ".concat(table, " AS [Target]\n        USING (VALUES [--REDACTED--]) AS [SOURCE] (").concat(insertColumns, ")\n        ON [Target].[--VALUE--] = [Source].[--VALUE--]\n        WHEN MATCHED THEN\n          UPDATE SET [--REDACTED--] \n        WHEN NOT MATCHED THEN\n          INSERT (").concat(insertColumns, ") VALUES [--REDACTED--];");
         console.log("Executing upsert via : ".concat(safeQuery));
         var request = new _tedious.Request(query, function (err, rowCount, rows) {
           if (err) {
@@ -506,13 +595,13 @@ function upsertMany(table, uuid, records, options) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="execute.html">execute</a></li><li><a href="insert.html">insert</a></li><li><a href="insertMany.html">insertMany</a></li><li><a href="sql.html">sql</a></li><li><a href="upsert.html">upsert</a></li><li><a href="upsertMany.html">upsertMany</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addRowsToRefs">addRowsToRefs</a></li><li><a href="global.html#cleanupState">cleanupState</a></li><li><a href="global.html#createConnection">createConnection</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="execute.html">execute</a></li><li><a href="findValue.html">findValue</a></li><li><a href="insert.html">insert</a></li><li><a href="insertMany.html">insertMany</a></li><li><a href="sql.html">sql</a></li><li><a href="upsert.html">upsert</a></li><li><a href="upsertMany.html">upsertMany</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addRowsToRefs">addRowsToRefs</a></li><li><a href="global.html#cleanupState">cleanupState</a></li><li><a href="global.html#createConnection">createConnection</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.6</a> on Fri Feb 05 2021 15:46:28 GMT+0000 (Greenwich Mean Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.6</a> on Fri Apr 16 2021 12:35:54 GMT+0000 (Greenwich Mean Time)
 </footer>
 
 <script> prettyPrint(); </script>
