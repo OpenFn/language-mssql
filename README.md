@@ -34,6 +34,27 @@ sql({
 sql({ query: `SELECT * FROM Household` });
 ```
 
+## Find a single value for a table
+
+This helper function allows to build a specific query where `sql` would not be best suited. It returns a single value and not a promise. An example of usage would be in building a mapping object with a value from a lookup table.
+
+```js
+alterState(async state => {
+  const user = {
+    id: 1,
+    name: 'Mamadou',
+    user_id: await findValue({
+      uuid: 'id',
+      relation: 'users',
+      where: { first_name: 'Mama%' },
+      operator: { first_name: 'like' }, // operator is optional. "=" is used by default.
+    })(state),
+  };
+
+  return upsert(...)(state);
+});
+```
+
 ## Insert one single record
 
 ```js
