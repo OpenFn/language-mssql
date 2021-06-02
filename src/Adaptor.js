@@ -639,6 +639,58 @@ export function insertTable(tableName, columns, options) {
   };
 }
 
+/**
+ * Alter an existing table in the database.
+ * @public
+ * @example
+ * modifyTable('table_name', state => state.data.map(
+ *   newColumn => ({
+ *     name: newColumn.name,
+ *     type: newColumn.type,
+ *     required: true, // optional
+ *     unique: false, // optional - to be set to true for unique constraint
+ *   })
+ * ));
+ * @constructor
+ * @param {string} tableName - The name of the table to alter
+ * @param {array} columns - An array of form columns
+ * @param {object} options - Optional options argument
+ * @returns {Operation}
+ */
+export function modifyTable(tableName, columns, options) {
+  return state => {
+    const { connection } = state;
+
+    try {
+      const data = expandReferences(columns)(state);
+
+      return new Promise((resolve, reject) => {
+        if (!data || data.length === 0) {
+          console.log('No columns provided; skipping table modification.');
+          resolve(state);
+          return state;
+        }
+        const structureData = data
+          .map(
+            x =>
+              `ADD ${x.name} ${x.type} ${x.unique ? 'UNIQUE' : ''} ${
+                x.identity ? 'IDENTITY (1,1)' : ''
+              } ${x.required ? 'NOT NULL' : ''}`
+          )
+          .join(', ');
+
+        const query = `ALTER TABLE ${tableName} ${structureData};`;
+
+        console.log('Preparing to modify table via:', query);
+        resolve(queryHandler(state, query, options));
+      });
+    } catch (e) {
+      connection.close();
+      throw e;
+    }
+  };
+}
+
 export {
   alterState,
   combine,
