@@ -64,6 +64,7 @@ export function execute(...operations) {
   const initialState = {
     references: [],
     data: null,
+    queries: [],
   };
 
   return state => {
