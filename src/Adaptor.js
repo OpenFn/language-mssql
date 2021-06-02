@@ -111,6 +111,49 @@ function addRowsToRefs(state, rows) {
 }
 
 /**
+ * Returns a flatten object of the rows (array of arrays) with rowCount.
+ * @function
+ * @param {array} rows - the array of rows returned from the sql query
+ * @returns {State}
+ */
+function flattenRows(rows) {
+  const obj = [];
+  rows.forEach(row => obj.push({ column_name: row[0].value }));
+  return { rowCount: rows.length, rows: obj };
+}
+
+function queryHandler(state, query, options) {
+  const { connection } = state;
+
+  return new Promise((resolve, reject) => {
+    if (options) {
+      if (options.writeSql) {
+        console.log('Adding prepared SQL to state.queries array.');
+        state.queries.push(query);
+      }
+
+      if (options.execute === false) {
+        console.log('Not executing query; options.execute === false');
+        resolve('Query not executed.');
+      }
+    }
+
+    const request = new Request(query, (err, rowCount, rows) => {
+      if (err) {
+        console.error(err.message);
+        throw err;
+      } else {
+        console.log(`Finished: ${rowCount} row(s).`);
+        resolve(flattenRows(rows));
+      }
+    });
+    connection.execSql(request);
+  }).then(data => {
+    return { ...state, response: { body: data } };
+  });
+}
+
+/**
  * Execute an SQL statement
  * @public
  * @example
