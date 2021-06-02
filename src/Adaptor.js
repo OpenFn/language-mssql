@@ -586,6 +586,59 @@ export function upsertMany(table, uuid, records, options) {
     };
   }
 
+/**
+ * Create a table in database when given an array of columns and a table_name.
+ * @public
+ * @example
+ * insertTable('table_name', state => state.data.map(
+ *   column => ({
+ *     name: column.name,
+ *     type: column.type,
+ *     required: true, // optional
+ *     unique: false, // optional - to be set to true for unique constraint
+ *   })
+ * ));
+ * @constructor
+ * @param {string} tableName - The name of the table to create
+ * @param {array} columns - An array of form columns
+ * @param {object} options - Optional options argument
+ * @returns {Operation}
+ */
+export function insertTable(tableName, columns, options) {
+  return state => {
+    const { connection } = state;
+    try {
+      const data = expandReferences(columns)(state);
+
+      return new Promise((resolve, reject) => {
+        if (!data || data.length === 0) {
+          console.log('No columns provided; skipping table creation.');
+          resolve(state);
+          return state;
+        }
+        const structureData = data
+          .map(
+            x =>
+              `${x.name} ${x.type} ${x.unique ? 'UNIQUE' : ''} ${
+                x.identity ? 'PRIMARY KEY IDENTITY (1,1)' : ''
+              } ${x.required ? 'NOT NULL' : ''}`
+          )
+          .join(', ');
+
+        const query = `CREATE TABLE ${tableName} (
+        ${structureData}
+      );`;
+
+        console.log('Preparing to create table via:', query);
+        resolve(queryHandler(state, query, options));
+      });
+    } catch (e) {
+      connection.close();
+      throw e;
+    }
+  };
+}
+
 export {
   alterState,
   combine,
