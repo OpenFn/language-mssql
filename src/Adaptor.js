@@ -557,34 +557,34 @@ export function upsertMany(table, uuid, records, options) {
 }
 
 /**
-   * List the columns of a table in a database.
-   * @public
-   * @example
-   * describeTable('clinic_visits')
-   * @constructor
-   * @param {string} tableName - The name of the table to describe
-   * @param {object} options - Optional options argument
-   * @returns {Operation}
-   */
-  export function describeTable(tableName, options) {
-    return state => {
-      const { connection } = state;
-      const name = expandReferences(tableName)(state);
-  
-      try {
-        const query = `SELECT column_name
+ * List the columns of a table in a database.
+ * @public
+ * @example
+ * describeTable('clinic_visits')
+ * @constructor
+ * @param {string} tableName - The name of the table to describe
+ * @param {object} options - Optional options argument
+ * @returns {Operation}
+ */
+export function describeTable(tableName, options) {
+  return state => {
+    const { connection } = state;
+    const name = expandReferences(tableName)(state);
+
+    try {
+      const query = `SELECT column_name
           FROM information_schema.columns 
           WHERE table_name = '${name}'
           ORDER BY ordinal_position`;
-  
-        console.log('Preparing to describe table via:', query);
-        return queryHandler(state, query, options);
-      } catch (e) {
-        connection.close();
-        throw e;
-      }
-    };
-  }
+
+      console.log('Preparing to describe table via:', query);
+      return queryHandler(state, query, options);
+    } catch (e) {
+      connection.close();
+      throw e;
+    }
+  };
+}
 
 /**
  * Create a table in database when given an array of columns and a table_name.
