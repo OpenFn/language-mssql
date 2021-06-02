@@ -148,7 +148,7 @@ function queryHandler(state, query, options) {
         resolve(flattenRows(rows));
       }
     });
-    connection.execSql(request);
+    if (!options || options.execute) connection.execSql(request);
   }).then(data => {
     return { ...state, response: { body: data } };
   });
