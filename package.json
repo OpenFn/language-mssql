@@ -12,7 +12,9 @@
     "build": "make",
     "test": "mocha --require @babel/register",
     "test:watch": "mocha -w --require @babel/register",
-    "prepack": "npx @openfn/simple-ast --adaptor ./lib/Adaptor.js --output ast.json"
+    "ast": "simple-ast --adaptor ./src/Adaptor.js --output ast.json",
+    "postversion": "git push && git push --tags",
+    "version": "npm run build && git add -A lib ast.json"
   },
   "author": "Open Function Group",
   "license": "LGPLv3",
@@ -32,6 +34,7 @@
     "@babel/preset-env": "^7.9.5",
     "@babel/preset-stage-0": "^7.8.3",
     "@babel/register": "^7.9.0",
+    "@openfn/simple-ast": "^0.3.0",
     "assertion-error": "^1.0.1",
     "chai": "^3.4.0",
     "deep-eql": "^0.1.3",
