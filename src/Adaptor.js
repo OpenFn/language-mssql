@@ -477,6 +477,91 @@ export function upsert(table, uuid, record, options) {
 }
 
 /**
+ * Insert or update a record based on a logical condition using ON CONFLICT UPDATE
+ * @public
+ * @example
+ * upsertIf(
+ *   dataValue('name'),
+ *   'users', // the DB table
+ *   'ON CONSTRAINT users_pkey', // a DB column with a unique constraint OR a CONSTRAINT NAME
+ *   { name: 'Elodie', id: 7 },
+ *   { writeSql:true, execute: true }
+ * )
+ * @constructor
+ * @param {string} logical - a data to check existing value for.
+ * @param {string} table - The target table
+ * @param {string} uuid - The uuid column to determine a matching/existing record
+ * @param {object} record - Payload data for the record as a JS object or function
+ * @param {object} options - Optional options argument
+ * @returns {Operation}
+ */
+export function upsertIf(logical, table, uuid, record, options) {
+  return state => {
+    const { connection } = state;
+
+    try {
+      const recordData = expandReferences(record)(state);
+      const columns = Object.keys(recordData).sort();
+      const logicalData = expandReferences(logical)(state);
+
+      return new Promise((resolve, reject) => {
+        if (!logicalData) {
+          console.log(`Skipping upsert for ${uuid}.`);
+          resolve(state);
+          return state;
+        }
+        const selectValues = columns
+          .map(key => `'${escapeQuote(recordData[key])}' AS ${key}`)
+          .join(', ');
+
+        const updateValues = columns
+          .map(key => `[Target].${key}='${escapeQuote(recordData[key])}'`)
+          .join(', ');
+
+        const insertColumns = columns.join(', ');
+        const insertValues = columns.map(key => `[Source].${key}`).join(', ');
+
+        const query = handleValues(
+          `MERGE ${table} AS [Target]
+          USING (SELECT ${selectValues}) AS [Source] 
+          ON [Target].${uuid} = [Source].${uuid}
+          WHEN MATCHED THEN
+            UPDATE SET ${updateValues} 
+          WHEN NOT MATCHED THEN
+            INSERT (${insertColumns}) VALUES (${insertValues});`,
+          handleOptions(options)
+        );
+
+        const safeQuery = `MERGE ${table} AS [Target]
+          USING (SELECT [--REDACTED--]) 
+          ON [Target].[--VALUE--] = [Source].[--VALUE--]
+          WHEN MATCHED THEN
+            UPDATE SET [--REDACTED--] 
+          WHEN NOT MATCHED THEN
+            INSERT (${insertColumns}) VALUES [--REDACTED--];`;
+
+        console.log(`Executing upsert via : ${safeQuery}`);
+
+        const request = new Request(query, (err, rowCount, rows) => {
+          if (err) {
+            console.error(err.message);
+            throw err;
+          } else {
+            console.log(`Finished: ${rowCount} row(s).`);
+            resolve(addRowsToRefs(state, rows));
+          }
+        });
+
+        connection.execSql(request);
+      });
+    } catch (e) {
+      connection.close();
+      throw e;
+    }
+  };
+}
+
+/**
  * Insert or update multiple records using ON CONFLICT UPDATE and excluded
  * @public
  * @example
