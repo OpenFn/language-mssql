@@ -291,6 +291,90 @@
       "valid": true
     },
     {
+      "name": "upsertIf",
+      "params": [
+        "logical",
+        "table",
+        "uuid",
+        "record",
+        "options"
+      ],
+      "docs": {
+        "description": "Insert or update a record based on a logical condition using ON CONFLICT UPDATE",
+        "tags": [
+          {
+            "title": "public",
+            "description": null,
+            "type": null
+          },
+          {
+            "title": "example",
+            "description": "upsertIf(\n  dataValue('name'),\n  'users', // the DB table\n  'ON CONSTRAINT users_pkey', // a DB column with a unique constraint OR a CONSTRAINT NAME\n  { name: 'Elodie', id: 7 },\n  { writeSql:true, execute: true }\n)"
+          },
+          {
+            "title": "constructor",
+            "description": null,
+            "type": null,
+            "name": null
+          },
+          {
+            "title": "param",
+            "description": "a data to check existing value for.",
+            "type": {
+              "type": "NameExpression",
+              "name": "string"
+            },
+            "name": "logical"
+          },
+          {
+            "title": "param",
+            "description": "The target table",
+            "type": {
+              "type": "NameExpression",
+              "name": "string"
+            },
+            "name": "table"
+          },
+          {
+            "title": "param",
+            "description": "The uuid column to determine a matching/existing record",
+            "type": {
+              "type": "NameExpression",
+              "name": "string"
+            },
+            "name": "uuid"
+          },
+          {
+            "title": "param",
+            "description": "Payload data for the record as a JS object or function",
+            "type": {
+              "type": "NameExpression",
+              "name": "object"
+            },
+            "name": "record"
+          },
+          {
+            "title": "param",
+            "description": "Optional options argument",
+            "type": {
+              "type": "NameExpression",
+              "name": "object"
+            },
+            "name": "options"
+          },
+          {
+            "title": "returns",
+            "description": null,
+            "type": {
+              "type": "NameExpression",
+              "name": "Operation"
+            }
+          }
+        ]
+      },
+      "valid": true
+    },
+    {
       "name": "upsertMany",
       "params": [
         "table",
