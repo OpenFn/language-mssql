@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Class: insert</title>
+    <title>JSDoc: Class: modifyTable</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Class: insert</h1>
+    <h1 class="page-title">Class: modifyTable</h1>
 
     
 
@@ -28,7 +28,7 @@
 
 <header>
     
-        <h2><span class="attribs"><span class="type-signature"></span></span>insert<span class="signature">(table, record, options)</span><span class="type-signature"> &rarr; {Operation}</span></h2>
+        <h2><span class="attribs"><span class="type-signature"></span></span>modifyTable<span class="signature">(tableName, columns, options)</span><span class="type-signature"> &rarr; {Operation}</span></h2>
         
     
 </header>
@@ -41,7 +41,7 @@
     
 
     
-    <h4 class="name" id="insert"><span class="type-signature"></span>new insert<span class="signature">(table, record, options)</span><span class="type-signature"> &rarr; {Operation}</span></h4>
+    <h4 class="name" id="modifyTable"><span class="type-signature"></span>new modifyTable<span class="signature">(tableName, columns, options)</span><span class="type-signature"> &rarr; {Operation}</span></h4>
     
 
     
@@ -49,7 +49,7 @@
 
 
 <div class="description">
-    Insert a record
+    Alter an existing table in the database.
 </div>
 
 
@@ -85,7 +85,7 @@
 
         <tr>
             
-                <td class="name"><code>table</code></td>
+                <td class="name"><code>tableName</code></td>
             
 
             <td class="type">
@@ -101,20 +101,20 @@
 
             
 
-            <td class="description last">The target table</td>
+            <td class="description last">The name of the table to alter</td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code>record</code></td>
+                <td class="name"><code>columns</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">object</span>
+<span class="param-type">array</span>
 
 
             
@@ -124,7 +124,7 @@
 
             
 
-            <td class="description last">Payload data for the record as a JS object</td>
+            <td class="description last">An array of form columns</td>
         </tr>
 
     
@@ -188,7 +188,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="Adaptor.js.html">Adaptor.js</a>, <a href="Adaptor.js.html#line427">line 427</a>
+        <a href="Adaptor.js.html">Adaptor.js</a>, <a href="Adaptor.js.html#line778">line 778</a>
     </li></ul></dd>
     
 
@@ -237,9 +237,14 @@
 
     <h5>Example</h5>
     
-    <pre class="prettyprint"><code>execute(
-  insert(table, record, {setNull: "'undefined'"})
-)(state)</code></pre>
+    <pre class="prettyprint"><code>modifyTable('table_name', state => state.data.map(
+  newColumn => ({
+    name: newColumn.name,
+    type: newColumn.type,
+    required: true, // optional
+    unique: false, // optional - to be set to true for unique constraint
+  })
+));</code></pre>
 
 
 

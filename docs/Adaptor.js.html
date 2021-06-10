@@ -37,7 +37,11 @@ exports.findValue = findValue;
 exports.insert = insert;
 exports.insertMany = insertMany;
 exports.upsert = upsert;
+exports.upsertIf = upsertIf;
 exports.upsertMany = upsertMany;
+exports.describeTable = describeTable;
+exports.insertTable = insertTable;
+exports.modifyTable = modifyTable;
 Object.defineProperty(exports, "alterState", {
   enumerable: true,
   get: function get() {
@@ -119,13 +123,13 @@ function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread n
 
 function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" &amp;&amp; o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
 
-function _iterableToArray(iter) { if (typeof Symbol !== "undefined" &amp;&amp; Symbol.iterator in Object(iter)) return Array.from(iter); }
+function _iterableToArray(iter) { if (typeof Symbol !== "undefined" &amp;&amp; iter[Symbol.iterator] != null || iter["@@iterator"] != null) return Array.from(iter); }
 
 function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) return _arrayLikeToArray(arr); }
 
 function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i &lt; len; i++) { arr2[i] = arr[i]; } return arr2; }
 
-function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) { symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); } keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i &lt; arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
@@ -201,7 +205,8 @@ function execute() {
 
   var initialState = {
     references: [],
-    data: null
+    data: null,
+    queries: []
   };
   return function (state) {
     return _languageCommon.execute.apply(void 0, [createConnection].concat(operations, [cleanupState]))(_objectSpread(_objectSpread({}, initialState), state))["catch"](function (e) {
@@ -242,6 +247,60 @@ function cleanupState(state) {
 function addRowsToRefs(state, rows) {
   return _objectSpread(_objectSpread({}, state), {}, {
     references: [rows].concat(_toConsumableArray(state.references))
+  });
+}
+/**
+ * Returns a flatten object of the rows (array of arrays) with rowCount.
+ * @function
+ * @param {array} rows - the array of rows returned from the sql query
+ * @returns {State}
+ */
+
+
+function flattenRows(rows) {
+  var obj = [];
+  rows.forEach(function (row) {
+    return obj.push({
+      column_name: row[0].value
+    });
+  });
+  return {
+    rowCount: rows.length,
+    rows: obj
+  };
+}
+
+function queryHandler(state, query, options) {
+  var connection = state.connection;
+  return new Promise(function (resolve, reject) {
+    if (options) {
+      if (options.writeSql) {
+        console.log('Adding prepared SQL to state.queries array.');
+        state.queries.push(query);
+      }
+
+      if (options.execute === false) {
+        console.log('Not executing query; options.execute === false');
+        resolve('Query not executed.');
+      }
+    }
+
+    var request = new _tedious.Request(query, function (err, rowCount, rows) {
+      if (err) {
+        console.error(err.message);
+        throw err;
+      } else {
+        console.log("Finished: ".concat(rowCount, " row(s)."));
+        resolve(flattenRows(rows));
+      }
+    });
+    if (!options || options.execute) connection.execSql(request);
+  }).then(function (data) {
+    return _objectSpread(_objectSpread({}, state), {}, {
+      response: {
+        body: data
+      }
+    });
   });
 }
 /**
@@ -526,6 +585,72 @@ function upsert(table, uuid, record, options) {
   };
 }
 /**
+ * Insert or update a record based on a logical condition using ON CONFLICT UPDATE
+ * @public
+ * @example
+ * upsertIf(
+ *   dataValue('name'),
+ *   'users', // the DB table
+ *   'ON CONSTRAINT users_pkey', // a DB column with a unique constraint OR a CONSTRAINT NAME
+ *   { name: 'Elodie', id: 7 },
+ *   { writeSql:true, execute: true }
+ * )
+ * @constructor
+ * @param {string} logical - a data to check existing value for.
+ * @param {string} table - The target table
+ * @param {string} uuid - The uuid column to determine a matching/existing record
+ * @param {object} record - Payload data for the record as a JS object or function
+ * @param {object} options - Optional options argument
+ * @returns {Operation}
+ */
+
+
+function upsertIf(logical, table, uuid, record, options) {
+  return function (state) {
+    var connection = state.connection;
+
+    try {
+      var recordData = (0, _languageCommon.expandReferences)(record)(state);
+      var columns = Object.keys(recordData).sort();
+      var logicalData = (0, _languageCommon.expandReferences)(logical)(state);
+      return new Promise(function (resolve, reject) {
+        if (!logicalData) {
+          console.log("Skipping upsert for ".concat(uuid, "."));
+          resolve(state);
+          return state;
+        }
+
+        var selectValues = columns.map(function (key) {
+          return "'".concat(escapeQuote(recordData[key]), "' AS ").concat(key);
+        }).join(', ');
+        var updateValues = columns.map(function (key) {
+          return "[Target].".concat(key, "='").concat(escapeQuote(recordData[key]), "'");
+        }).join(', ');
+        var insertColumns = columns.join(', ');
+        var insertValues = columns.map(function (key) {
+          return "[Source].".concat(key);
+        }).join(', ');
+        var query = handleValues("MERGE ".concat(table, " AS [Target]\n          USING (SELECT ").concat(selectValues, ") AS [Source] \n          ON [Target].").concat(uuid, " = [Source].").concat(uuid, "\n          WHEN MATCHED THEN\n            UPDATE SET ").concat(updateValues, " \n          WHEN NOT MATCHED THEN\n            INSERT (").concat(insertColumns, ") VALUES (").concat(insertValues, ");"), handleOptions(options));
+        var safeQuery = "MERGE ".concat(table, " AS [Target]\n          USING (SELECT [--REDACTED--]) \n          ON [Target].[--VALUE--] = [Source].[--VALUE--]\n          WHEN MATCHED THEN\n            UPDATE SET [--REDACTED--] \n          WHEN NOT MATCHED THEN\n            INSERT (").concat(insertColumns, ") VALUES [--REDACTED--];");
+        console.log("Executing upsert via : ".concat(safeQuery));
+        var request = new _tedious.Request(query, function (err, rowCount, rows) {
+          if (err) {
+            console.error(err.message);
+            throw err;
+          } else {
+            console.log("Finished: ".concat(rowCount, " row(s)."));
+            resolve(addRowsToRefs(state, rows));
+          }
+        });
+        connection.execSql(request);
+      });
+    } catch (e) {
+      connection.close();
+      throw e;
+    }
+  };
+}
+/**
  * Insert or update multiple records using ON CONFLICT UPDATE and excluded
  * @public
  * @example
@@ -585,6 +710,125 @@ function upsertMany(table, uuid, records, options) {
     }
   };
 }
+/**
+ * List the columns of a table in a database.
+ * @public
+ * @example
+ * describeTable('clinic_visits')
+ * @constructor
+ * @param {string} tableName - The name of the table to describe
+ * @param {object} options - Optional options argument
+ * @returns {Operation}
+ */
+
+
+function describeTable(tableName, options) {
+  return function (state) {
+    var connection = state.connection;
+    var name = (0, _languageCommon.expandReferences)(tableName)(state);
+
+    try {
+      var query = "SELECT column_name\n          FROM information_schema.columns \n          WHERE table_name = '".concat(name, "'\n          ORDER BY ordinal_position");
+      console.log('Preparing to describe table via:', query);
+      return queryHandler(state, query, options);
+    } catch (e) {
+      connection.close();
+      throw e;
+    }
+  };
+}
+/**
+ * Create a table in database when given an array of columns and a table_name.
+ * @public
+ * @example
+ * insertTable('table_name', state => state.data.map(
+ *   column => ({
+ *     name: column.name,
+ *     type: column.type,
+ *     required: true, // optional
+ *     unique: false, // optional - to be set to true for unique constraint
+ *   })
+ * ));
+ * @constructor
+ * @param {string} tableName - The name of the table to create
+ * @param {array} columns - An array of form columns
+ * @param {object} options - Optional options argument
+ * @returns {Operation}
+ */
+
+
+function insertTable(tableName, columns, options) {
+  return function (state) {
+    var connection = state.connection;
+
+    try {
+      var data = (0, _languageCommon.expandReferences)(columns)(state);
+      return new Promise(function (resolve, reject) {
+        if (!data || data.length === 0) {
+          console.log('No columns provided; skipping table creation.');
+          resolve(state);
+          return state;
+        }
+
+        var structureData = data.map(function (x) {
+          return "".concat(x.name, " ").concat(x.type, " ").concat(x.unique ? 'UNIQUE' : '', " ").concat(x.identity ? 'PRIMARY KEY IDENTITY (1,1)' : '', " ").concat(x.required ? 'NOT NULL' : '');
+        }).join(', ');
+        var query = "CREATE TABLE ".concat(tableName, " (\n        ").concat(structureData, "\n      );");
+        console.log('Preparing to create table via:', query);
+        resolve(queryHandler(state, query, options));
+      });
+    } catch (e) {
+      connection.close();
+      throw e;
+    }
+  };
+}
+/**
+ * Alter an existing table in the database.
+ * @public
+ * @example
+ * modifyTable('table_name', state => state.data.map(
+ *   newColumn => ({
+ *     name: newColumn.name,
+ *     type: newColumn.type,
+ *     required: true, // optional
+ *     unique: false, // optional - to be set to true for unique constraint
+ *   })
+ * ));
+ * @constructor
+ * @param {string} tableName - The name of the table to alter
+ * @param {array} columns - An array of form columns
+ * @param {object} options - Optional options argument
+ * @returns {Operation}
+ */
+
+
+function modifyTable(tableName, columns, options) {
+  return function (state) {
+    var connection = state.connection;
+
+    try {
+      var data = (0, _languageCommon.expandReferences)(columns)(state);
+      return new Promise(function (resolve, reject) {
+        if (!data || data.length === 0) {
+          console.log('No columns provided; skipping table modification.');
+          resolve(state);
+          return state;
+        }
+
+        var structureData = data.map(function (x) {
+          return "ADD ".concat(x.name, " ").concat(x.type, " ").concat(x.unique ? 'UNIQUE' : '', " ").concat(x.identity ? 'IDENTITY (1,1)' : '', " ").concat(x.required ? 'NOT NULL' : '');
+        }).join(', ');
+        var query = "ALTER TABLE ".concat(tableName, " ").concat(structureData, ";");
+        console.log('Preparing to modify table via:', query);
+        resolve(queryHandler(state, query, options));
+      });
+    } catch (e) {
+      connection.close();
+      throw e;
+    }
+  };
+}
 </code></pre>
         </article>
     </section>
@@ -595,13 +839,13 @@ function upsertMany(table, uuid, records, options) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="execute.html">execute</a></li><li><a href="findValue.html">findValue</a></li><li><a href="insert.html">insert</a></li><li><a href="insertMany.html">insertMany</a></li><li><a href="sql.html">sql</a></li><li><a href="upsert.html">upsert</a></li><li><a href="upsertMany.html">upsertMany</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addRowsToRefs">addRowsToRefs</a></li><li><a href="global.html#cleanupState">cleanupState</a></li><li><a href="global.html#createConnection">createConnection</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="describeTable.html">describeTable</a></li><li><a href="execute.html">execute</a></li><li><a href="findValue.html">findValue</a></li><li><a href="insert.html">insert</a></li><li><a href="insertMany.html">insertMany</a></li><li><a href="insertTable.html">insertTable</a></li><li><a href="modifyTable.html">modifyTable</a></li><li><a href="sql.html">sql</a></li><li><a href="upsert.html">upsert</a></li><li><a href="upsertIf.html">upsertIf</a></li><li><a href="upsertMany.html">upsertMany</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addRowsToRefs">addRowsToRefs</a></li><li><a href="global.html#cleanupState">cleanupState</a></li><li><a href="global.html#createConnection">createConnection</a></li><li><a href="global.html#flattenRows">flattenRows</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.6</a> on Fri Apr 16 2021 12:35:54 GMT+0000 (Greenwich Mean Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.6</a> on Thu Jun 10 2021 14:41:13 GMT+0000 (Greenwich Mean Time)
 </footer>
 
 <script> prettyPrint(); </script>

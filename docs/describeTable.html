@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Class: insert</title>
+    <title>JSDoc: Class: describeTable</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Class: insert</h1>
+    <h1 class="page-title">Class: describeTable</h1>
 
     
 
@@ -28,7 +28,7 @@
 
 <header>
     
-        <h2><span class="attribs"><span class="type-signature"></span></span>insert<span class="signature">(table, record, options)</span><span class="type-signature"> &rarr; {Operation}</span></h2>
+        <h2><span class="attribs"><span class="type-signature"></span></span>describeTable<span class="signature">(tableName, options)</span><span class="type-signature"> &rarr; {Operation}</span></h2>
         
     
 </header>
@@ -41,7 +41,7 @@
     
 
     
-    <h4 class="name" id="insert"><span class="type-signature"></span>new insert<span class="signature">(table, record, options)</span><span class="type-signature"> &rarr; {Operation}</span></h4>
+    <h4 class="name" id="describeTable"><span class="type-signature"></span>new describeTable<span class="signature">(tableName, options)</span><span class="type-signature"> &rarr; {Operation}</span></h4>
     
 
     
@@ -49,7 +49,7 @@
 
 
 <div class="description">
-    Insert a record
+    List the columns of a table in a database.
 </div>
 
 
@@ -85,7 +85,7 @@
 
         <tr>
             
-                <td class="name"><code>table</code></td>
+                <td class="name"><code>tableName</code></td>
             
 
             <td class="type">
@@ -101,30 +101,7 @@
 
             
 
-            <td class="description last">The target table</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>record</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">object</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">Payload data for the record as a JS object</td>
+            <td class="description last">The name of the table to describe</td>
         </tr>
 
     
@@ -188,7 +165,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="Adaptor.js.html">Adaptor.js</a>, <a href="Adaptor.js.html#line427">line 427</a>
+        <a href="Adaptor.js.html">Adaptor.js</a>, <a href="Adaptor.js.html#line697">line 697</a>
     </li></ul></dd>
     
 
@@ -237,9 +214,7 @@
 
     <h5>Example</h5>
     
-    <pre class="prettyprint"><code>execute(
-  insert(table, record, {setNull: "'undefined'"})
-)(state)</code></pre>
+    <pre class="prettyprint"><code>describeTable('clinic_visits')</code></pre>
 
 
 

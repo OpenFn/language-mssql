@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Class: insert</title>
+    <title>JSDoc: Class: upsertIf</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Class: insert</h1>
+    <h1 class="page-title">Class: upsertIf</h1>
 
     
 
@@ -28,7 +28,7 @@
 
 <header>
     
-        <h2><span class="attribs"><span class="type-signature"></span></span>insert<span class="signature">(table, record, options)</span><span class="type-signature"> &rarr; {Operation}</span></h2>
+        <h2><span class="attribs"><span class="type-signature"></span></span>upsertIf<span class="signature">(logical, table, uuid, record, options)</span><span class="type-signature"> &rarr; {Operation}</span></h2>
         
     
 </header>
@@ -41,7 +41,7 @@
     
 
     
-    <h4 class="name" id="insert"><span class="type-signature"></span>new insert<span class="signature">(table, record, options)</span><span class="type-signature"> &rarr; {Operation}</span></h4>
+    <h4 class="name" id="upsertIf"><span class="type-signature"></span>new upsertIf<span class="signature">(logical, table, uuid, record, options)</span><span class="type-signature"> &rarr; {Operation}</span></h4>
     
 
     
@@ -49,7 +49,7 @@
 
 
 <div class="description">
-    Insert a record
+    Insert or update a record based on a logical condition using ON CONFLICT UPDATE
 </div>
 
 
@@ -85,6 +85,29 @@
 
         <tr>
             
+                <td class="name"><code>logical</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">a data to check existing value for.</td>
+        </tr>
+
+    
+
+        <tr>
+            
                 <td class="name"><code>table</code></td>
             
 
@@ -108,6 +131,29 @@
 
         <tr>
             
+                <td class="name"><code>uuid</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The uuid column to determine a matching/existing record</td>
+        </tr>
+
+    
+
+        <tr>
+            
                 <td class="name"><code>record</code></td>
             
 
@@ -124,7 +170,7 @@
 
             
 
-            <td class="description last">Payload data for the record as a JS object</td>
+            <td class="description last">Payload data for the record as a JS object or function</td>
         </tr>
 
     
@@ -188,7 +234,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="Adaptor.js.html">Adaptor.js</a>, <a href="Adaptor.js.html#line427">line 427</a>
+        <a href="Adaptor.js.html">Adaptor.js</a>, <a href="Adaptor.js.html#line580">line 580</a>
     </li></ul></dd>
     
 
@@ -237,9 +283,13 @@
 
     <h5>Example</h5>
     
-    <pre class="prettyprint"><code>execute(
-  insert(table, record, {setNull: "'undefined'"})
-)(state)</code></pre>
+    <pre class="prettyprint"><code>upsertIf(
+  dataValue('name'),
+  'users', // the DB table
+  'ON CONSTRAINT users_pkey', // a DB column with a unique constraint OR a CONSTRAINT NAME
+  { name: 'Elodie', id: 7 },
+  { writeSql:true, execute: true }
+)</code></pre>
 
 
 
