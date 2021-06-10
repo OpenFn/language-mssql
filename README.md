@@ -92,6 +92,17 @@ upsert(
 );
 ```
 
+## Insert or Update if a value exist in the record
+
+This function will upsert a record only if the logical given is true. In this case we check if `dataValue('name')` exists.
+
+```js
+upsertIf(dataValue('name'), 'users', 'user_id', {
+  name: 'Elodie',
+  id: 7,
+});
+```
+
 ## Insert Many records
 
 This function allows the insert of a set of records inside a table all at once.
