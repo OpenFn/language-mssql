@@ -758,13 +758,13 @@ export function modifyTable(tableName, columns, options) {
         const structureData = data
           .map(
             x =>
-              `ADD ${x.name} ${x.type} ${x.unique ? 'UNIQUE' : ''} ${
+              `${x.name} ${x.type} ${x.unique ? 'UNIQUE' : ''} ${
                 x.identity ? 'IDENTITY (1,1)' : ''
               } ${x.required ? 'NOT NULL' : ''}`
           )
           .join(', ');
 
-        const query = `ALTER TABLE ${tableName} ${structureData};`;
+        const query = `ALTER TABLE ${tableName} ADD ${structureData};`;
 
         console.log('Preparing to modify table via:', query);
         resolve(queryHandler(state, query, options));
