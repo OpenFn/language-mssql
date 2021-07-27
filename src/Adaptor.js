@@ -704,7 +704,9 @@ export function insertTable(tableName, columns, options) {
         const structureData = data
           .map(
             x =>
-              `${x.name} ${x.type} ${x.unique ? 'UNIQUE' : ''} ${
+              `${x.name} ${x.type} ${
+                x.default ? `DEFAULT '${x.default}'` : ''
+              } ${x.unique ? 'UNIQUE' : ''} ${
                 x.identity ? 'PRIMARY KEY IDENTITY (1,1)' : ''
               } ${x.required ? 'NOT NULL' : ''}`
           )
@@ -758,7 +760,9 @@ export function modifyTable(tableName, columns, options) {
         const structureData = data
           .map(
             x =>
-              `${x.name} ${x.type} ${x.unique ? 'UNIQUE' : ''} ${
+              `${x.name} ${x.type} ${
+                x.default ? `DEFAULT '${x.default}'` : ''
+              } ${x.unique ? 'UNIQUE' : ''} ${
                 x.identity ? 'IDENTITY (1,1)' : ''
               } ${x.required ? 'NOT NULL' : ''}`
           )
