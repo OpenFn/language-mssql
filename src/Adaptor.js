@@ -705,7 +705,11 @@ export function insertTable(tableName, columns, options) {
           .map(
             x =>
               `${x.name} ${x.type} ${
-                x.default ? `DEFAULT '${x.default}'` : ''
+                x.hasOwnProperty('default')
+                  ? x.type.includes('varchar') || x.type.includes('text')
+                    ? `DEFAULT '${x.default}'`
+                    : `DEFAULT ${x.default}`
+                  : ''
               } ${x.unique ? 'UNIQUE' : ''} ${
                 x.identity ? 'PRIMARY KEY IDENTITY (1,1)' : ''
               } ${x.required ? 'NOT NULL' : ''}`
@@ -761,7 +765,11 @@ export function modifyTable(tableName, columns, options) {
           .map(
             x =>
               `${x.name} ${x.type} ${
-                x.default ? `DEFAULT '${x.default}'` : ''
+                x.hasOwnProperty('default')
+                  ? x.type.includes('varchar') || x.type.includes('text')
+                    ? `DEFAULT '${x.default}'`
+                    : `DEFAULT ${x.default}`
+                  : ''
               } ${x.unique ? 'UNIQUE' : ''} ${
                 x.identity ? 'IDENTITY (1,1)' : ''
               } ${x.required ? 'NOT NULL' : ''}`
