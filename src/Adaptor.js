@@ -202,14 +202,14 @@ function handleValues(sqlString, nullString) {
   let sql = sqlString;
   if (nullString == false) {
     return sqlString;
-  } else if (typeof nullString === 'object') {
+  } else if (Array.isArray(nullString)) {
     nullString.forEach(ns => {
       const re = new RegExp(escapeRegExp(ns), 'g');
       sql = sql.replace(re, 'NULL');
-
-      return sql;
     });
     return sql;
+  } else if (typeof nullString === 'object') {
+    throw 'setNull must be a string or an array of strings.';
   }
   const re = new RegExp(escapeRegExp(nullString), 'g');
   return sqlString.replace(re, 'NULL');
