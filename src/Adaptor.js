@@ -199,13 +199,13 @@ function escapeRegExp(string) {
 }
 
 function handleValues(sqlString, nullString) {
-  let sql = '';
+  let sql = sqlString;
   if (nullString == false) {
     return sqlString;
   } else if (typeof nullString === 'object') {
     nullString.forEach(ns => {
       const re = new RegExp(escapeRegExp(ns), 'g');
-      sql = sqlString.replace(re, 'NULL');
+      sql = sql.replace(re, 'NULL');
 
       return sql;
     });
