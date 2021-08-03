@@ -199,10 +199,18 @@ function escapeRegExp(string) {
 }
 
 function handleValues(sqlString, nullString) {
+  let sql = '';
   if (nullString == false) {
     return sqlString;
-  }
+  } else if (typeof nullString === 'object') {
+    nullString.forEach(ns => {
+      const re = new RegExp(escapeRegExp(ns), 'g');
+      sql = sqlString.replace(re, 'NULL');
 
+      return sql;
+    });
+    return sql;
+  }
   const re = new RegExp(escapeRegExp(nullString), 'g');
   return sqlString.replace(re, 'NULL');
 }
@@ -292,7 +300,7 @@ export function findValue(filter) {
  * @public
  * @example
  * execute(
- *   insert(table, record, {setNull: "'undefined'"})
+ *   insert(table, record, {setNull: ["'undefined'", "''"]})
  * )(state)
  * @constructor
  * @param {string} table - The target table
