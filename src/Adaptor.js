@@ -798,6 +798,7 @@ export function modifyTable(tableName, columns, options) {
 
 export {
   alterState,
+  fn,
   combine,
   dataPath,
   dataValue,

@@ -23,7 +23,7 @@
     "ast.json"
   ],
   "dependencies": {
-    "@openfn/language-common": "1.2.6",
+    "@openfn/language-common": "1.4.1",
     "request": "2.88.0",
     "tedious": "8.0.1"
   },
