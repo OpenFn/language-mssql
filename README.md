@@ -68,7 +68,8 @@ insert(
   {
     // The optional `options` argument allows for global string replacement with
     // NULL. This is useful if you want to map an undefined value (e.g., x.name)
-    // to NULL. It DEFAULTS to "'undefined'", and can be turned off w/ `false`.
+    // to NULL. It can be a single string or an array of strings.
+    // It DEFAULTS to "'undefined'", and can be turned off w/ `false`.
     setNull: "'undefined'",
   }
 );
@@ -97,10 +98,17 @@ upsert(
 This function will upsert a record only if the logical given is true. In this case we check if `dataValue('name')` exists.
 
 ```js
-upsertIf(dataValue('name'), 'users', 'user_id', {
-  name: 'Elodie',
-  id: 7,
-});
+upsertIf(
+  dataValue('name'),
+  'users',
+  'user_id',
+  {
+    name: 'Elodie',
+    id: 7,
+  },
+  // Replace any occurence of '' and 'undefined' to NULL
+  { setNull: ["''", "'undefined'"] }
+);
 ```
 
 ## Insert Many records
