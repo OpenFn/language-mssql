@@ -136,6 +136,7 @@ function queryHandler(state, query, options) {
       if (options.execute === false) {
         console.log('Not executing query; options.execute === false');
         resolve('Query not executed.');
+        return state;
       }
     }
 
@@ -172,21 +173,8 @@ export function sql(params) {
     try {
       const { query, options } = expandReferences(params)(state);
 
-      return new Promise((resolve, reject) => {
-        console.log(`Executing query: ${query}`);
-
-        const request = new Request(query, (err, rowCount, rows) => {
-          if (err) {
-            console.error(err.message);
-            throw err;
-          } else {
-            console.log(`Finished: ${rowCount} row(s).`);
-            resolve(addRowsToRefs(state, rows));
-          }
-        });
-
-        connection.execSql(request);
-      });
+      console.log(`Preparing to execute sql statement: ${query}`,);
+      return queryHandler(state, query, options);
     } catch (e) {
       connection.close();
       throw e;

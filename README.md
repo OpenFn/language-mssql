@@ -31,7 +31,13 @@ sql({
   `,
 });
 
-sql({ query: `SELECT * FROM Household` });
+sql({
+  query: `SELECT * FROM Household`,
+  options: {
+    writeSql: true, // Keep to true to log query (otherwise make it false).
+    execute: true, // keep to false to not alter DB
+  },
+});
 ```
 
 ## Find a single value for a table

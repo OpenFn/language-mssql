@@ -634,12 +634,12 @@
   "exports": [],
   "common": [
     {
-      "name": "fn",
+      "name": "alterState",
       "params": [
         "func"
       ],
       "docs": {
-        "description": "Creates a custom step (or operation) for more flexible job writing.",
+        "description": "Runs a function using state.",
         "tags": [
           {
             "title": "public",
@@ -648,7 +648,7 @@
           },
           {
             "title": "example",
-            "description": "fn(state => {\n  // do some things to state\n  return state;\n});"
+            "description": "alterState(callback)"
           },
           {
             "title": "function",
@@ -752,7 +752,7 @@
         "path"
       ],
       "docs": {
-        "description": "Picks out a single value from the source data object—usually `state.data`.\nIf a JSONPath returns more than one value for the reference, the first\nitem will be returned.",
+        "description": "Picks out a single value from source data.\nIf a JSONPath returns more than one value for the reference, the first\nitem will be returned.",
         "tags": [
           {
             "title": "public",
@@ -864,7 +864,7 @@
     {
       "name": "combine",
       "params": [
-        "operations"
+        null
       ],
       "docs": {
         "description": "Combines two operations into one",
@@ -884,15 +884,6 @@
             "name": null
           },
           {
-            "title": "param",
-            "description": "Operations to be performed.",
-            "type": {
-              "type": "NameExpression",
-              "name": "Operations"
-            },
-            "name": "operations"
-          },
-          {
             "title": "returns",
             "description": null,
             "type": {
@@ -902,7 +893,7 @@
           }
         ]
       },
-      "valid": true
+      "valid": false
     },
     {
       "name": "field",
@@ -952,7 +943,7 @@
     {
       "name": "fields",
       "params": [
-        "fields"
+        null
       ],
       "docs": {
         "description": "Zips key value pairs into an object.",
@@ -972,15 +963,6 @@
             "name": null
           },
           {
-            "title": "param",
-            "description": "a list of fields",
-            "type": {
-              "type": "NameExpression",
-              "name": "Fields"
-            },
-            "name": "fields"
-          },
-          {
             "title": "returns",
             "description": null,
             "type": {
@@ -990,7 +972,7 @@
           }
         ]
       },
-      "valid": true
+      "valid": false
     },
     {
       "name": "merge",
