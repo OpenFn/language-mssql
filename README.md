@@ -120,6 +120,7 @@ upsertIf(
 ## Insert Many records
 
 This function allows the insert of a set of records inside a table all at once.
+Pass `logQuery` option to `true` to display the query.
 
 ```js
 // Note that insertMany takes a function which returns an array—this helps

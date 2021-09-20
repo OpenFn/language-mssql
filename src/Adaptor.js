@@ -288,7 +288,7 @@ export function findValue(filter) {
  * @public
  * @example
  * execute(
- *   insert(table, record, {setNull: ["'undefined'", "''"]})
+ *   insert(table, record, {setNull: ["'undefined'", "''"], logQuery: false})
  * )(state)
  * @constructor
  * @param {string} table - The target table
@@ -318,7 +318,9 @@ export function insert(table, record, options) {
       )}) VALUES [--REDACTED--]];`;
 
       return new Promise((resolve, reject) => {
-        console.log(`Executing insert via: ${safeQuery}`);
+
+        const queryToLog = options && options.logQuery ? query : safeQuery
+        console.log(`Executing insert many via: ${queryToLog}`);
 
         const request = new Request(query, (err, rowCount, rows) => {
           if (err) {
@@ -344,7 +346,7 @@ export function insert(table, record, options) {
  * @public
  * @example
  * execute(
- *   insertMany(table, records, { setNull: false })
+ *   insertMany(table, records, { setNull: false, logQuery: false })
  * )(state)
  * @constructor
  * @param {string} table - The target table
@@ -377,7 +379,9 @@ export function insertMany(table, records, options) {
       )}) VALUES [--REDACTED--]];`;
 
       return new Promise((resolve, reject) => {
-        console.log(`Executing insert many via: ${safeQuery}`);
+
+        const queryToLog = options && options.logQuery ? query : safeQuery
+        console.log(`Executing insert many via: ${queryToLog}`);
 
         const request = new Request(query, (err, rowCount, rows) => {
           if (err) {
@@ -403,7 +407,7 @@ export function insertMany(table, records, options) {
  * @public
  * @example
  * execute(
- *   upsert(table, uuid, record, { setNull: "'undefined'"})
+ *   upsert(table, uuid, record, { setNull: "'undefined'", logQuery: false})
  * )(state)
  * @constructor
  * @param {string} table - The target table
@@ -451,7 +455,9 @@ export function upsert(table, uuid, record, options) {
           INSERT (${insertColumns}) VALUES [--REDACTED--];`;
 
       return new Promise((resolve, reject) => {
-        console.log(`Executing upsert via : ${safeQuery}`);
+
+        const queryToLog = options && options.logQuery ? query : safeQuery
+        console.log(`Executing insert many via: ${queryToLog}`);
 
         const request = new Request(query, (err, rowCount, rows) => {
           if (err) {
@@ -481,7 +487,7 @@ export function upsert(table, uuid, record, options) {
  *   'users', // the DB table
  *   'ON CONSTRAINT users_pkey', // a DB column with a unique constraint OR a CONSTRAINT NAME
  *   { name: 'Elodie', id: 7 },
- *   { writeSql:true, execute: true }
+ *   { writeSql:true, execute: true, logQuery: false }
  * )
  * @constructor
  * @param {string} logical - a data to check existing value for.
@@ -536,7 +542,8 @@ export function upsertIf(logical, table, uuid, record, options) {
           WHEN NOT MATCHED THEN
             INSERT (${insertColumns}) VALUES [--REDACTED--];`;
 
-        console.log(`Executing upsert via : ${safeQuery}`);
+        const queryToLog = options && options.logQuery ? query : safeQuery
+        console.log(`Executing insert many via: ${queryToLog}`);
 
         const request = new Request(query, (err, rowCount, rows) => {
           if (err) {
@@ -562,7 +569,7 @@ export function upsertIf(logical, table, uuid, record, options) {
  * @public
  * @example
  * upsertMany(
- *  'users', 'email', records
+ *  'users', 'email', records, { logQuery: false }
  * )
  * @constructor
  * @param {string} table - The target table
@@ -616,7 +623,8 @@ export function upsertMany(table, uuid, records, options) {
         WHEN NOT MATCHED THEN
           INSERT (${insertColumns}) VALUES [--REDACTED--];`;
 
-        console.log(`Executing upsert via : ${safeQuery}`);
+        const queryToLog = options && options.logQuery ? query : safeQuery
+        console.log(`Executing insert many via: ${queryToLog}`);
 
         const request = new Request(query, (err, rowCount, rows) => {
           if (err) {
@@ -700,14 +708,12 @@ export function insertTable(tableName, columns, options) {
         const structureData = data
           .map(
             x =>
-              `${x.name} ${x.type} ${
-                x.hasOwnProperty('default')
-                  ? x.type.includes('varchar') || x.type.includes('text')
-                    ? `DEFAULT '${x.default}'`
-                    : `DEFAULT ${x.default}`
-                  : ''
-              } ${x.unique ? 'UNIQUE' : ''} ${
-                x.identity ? 'PRIMARY KEY IDENTITY (1,1)' : ''
+              `${x.name} ${x.type} ${x.hasOwnProperty('default')
+                ? x.type.includes('varchar') || x.type.includes('text')
+                  ? `DEFAULT '${x.default}'`
+                  : `DEFAULT ${x.default}`
+                : ''
+              } ${x.unique ? 'UNIQUE' : ''} ${x.identity ? 'PRIMARY KEY IDENTITY (1,1)' : ''
               } ${x.required ? 'NOT NULL' : ''}`
           )
           .join(', ');
@@ -760,14 +766,12 @@ export function modifyTable(tableName, columns, options) {
         const structureData = data
           .map(
             x =>
-              `${x.name} ${x.type} ${
-                x.hasOwnProperty('default')
-                  ? x.type.includes('varchar') || x.type.includes('text')
-                    ? `DEFAULT '${x.default}'`
-                    : `DEFAULT ${x.default}`
-                  : ''
-              } ${x.unique ? 'UNIQUE' : ''} ${
-                x.identity ? 'IDENTITY (1,1)' : ''
+              `${x.name} ${x.type} ${x.hasOwnProperty('default')
+                ? x.type.includes('varchar') || x.type.includes('text')
+                  ? `DEFAULT '${x.default}'`
+                  : `DEFAULT ${x.default}`
+                : ''
+              } ${x.unique ? 'UNIQUE' : ''} ${x.identity ? 'IDENTITY (1,1)' : ''
               } ${x.required ? 'NOT NULL' : ''}`
           )
           .join(', ');
