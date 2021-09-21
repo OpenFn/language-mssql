@@ -117,13 +117,14 @@ function addRowsToRefs(state, rows) {
  * @param {array} rows - the array of rows returned from the sql query
  * @returns {State}
  */
-function flattenRows(rows) {
+function flattenRows(state, rows) {
   const obj = [];
   rows.forEach(row => obj.push({ column_name: row[0].value }));
-  return { rowCount: rows.length, rows: obj };
+  const data = { rowCount: rows.length, rows: obj };
+  return { ...state, response: { body: data } };
 }
 
-function queryHandler(state, query, options) {
+function queryHandler(state, query, callback, options) {
   const { connection } = state;
 
   return new Promise((resolve, reject) => {
@@ -146,13 +147,13 @@ function queryHandler(state, query, options) {
         throw err;
       } else {
         console.log(`Finished: ${rowCount} row(s).`);
-        resolve(flattenRows(rows));
+        resolve(callback(state, rows));
       }
     });
     if (!options || options.execute) connection.execSql(request);
-  }).then(data => {
+  }); /* .then(data => {
     return { ...state, response: { body: data } };
-  });
+  }); */
 }
 
 /**
@@ -174,7 +175,7 @@ export function sql(params) {
       const { query, options } = expandReferences(params)(state);
 
       console.log(`Preparing to execute sql statement: ${query}`);
-      return queryHandler(state, query, options);
+      return queryHandler(state, query, flattenRows, options);
     } catch (e) {
       connection.close();
       throw e;
@@ -623,15 +624,7 @@ export function upsertMany(table, uuid, records, options) {
         const queryToLog = options && options.logValues ? query : safeQuery;
         console.log(`Executing upsertMany via: ${queryToLog}`);
 
-        const request = new Request(query, (err, rowCount, rows) => {
-          if (err) {
-            console.error(err.message);
-            throw err;
-          } else {
-            console.log(`Finished: ${rowCount} row(s).`);
-            resolve(addRowsToRefs(state, rows));
-          }
-        });
+        resolve(queryHandler(state, query, addRowsToRefs, options));
 
         connection.execSql(request);
       });
@@ -664,7 +657,7 @@ export function describeTable(tableName, options) {
           ORDER BY ordinal_position`;
 
       console.log('Preparing to describe table via:', query);
-      return queryHandler(state, query, options);
+      return queryHandler(state, query, flattenRows, options);
     } catch (e) {
       connection.close();
       throw e;
@@ -722,7 +715,7 @@ export function insertTable(tableName, columns, options) {
       );`;
 
         console.log('Preparing to create table via:', query);
-        resolve(queryHandler(state, query, options));
+        resolve(queryHandler(state, query, flattenRows, options));
       });
     } catch (e) {
       connection.close();
@@ -780,7 +773,7 @@ export function modifyTable(tableName, columns, options) {
         const query = `ALTER TABLE ${tableName} ADD ${structureData};`;
 
         console.log('Preparing to modify table via:', query);
-        resolve(queryHandler(state, query, options));
+        resolve(queryHandler(state, query, flattenRows, options));
       });
     } catch (e) {
       connection.close();
