@@ -105,7 +105,7 @@
           },
           {
             "title": "example",
-            "description": "execute(\n  insert(table, record, {setNull: [\"'undefined'\", \"''\"], logQuery: false})\n)(state)"
+            "description": "execute(\n  insert(table, record, {setNull: [\"'undefined'\", \"''\"], logValues: false})\n)(state)"
           },
           {
             "title": "constructor",
@@ -169,7 +169,7 @@
           },
           {
             "title": "example",
-            "description": "execute(\n  insertMany(table, records, { setNull: false, logQuery: false })\n)(state)"
+            "description": "execute(\n  insertMany(table, records, { setNull: false, logValues: false })\n)(state)"
           },
           {
             "title": "constructor",
@@ -234,7 +234,7 @@
           },
           {
             "title": "example",
-            "description": "execute(\n  upsert(table, uuid, record, { setNull: \"'undefined'\", logQuery: false})\n)(state)"
+            "description": "execute(\n  upsert(table, uuid, record, { setNull: \"'undefined'\", logValues: false})\n)(state)"
           },
           {
             "title": "constructor",
@@ -309,7 +309,7 @@
           },
           {
             "title": "example",
-            "description": "upsertIf(\n  dataValue('name'),\n  'users', // the DB table\n  'ON CONSTRAINT users_pkey', // a DB column with a unique constraint OR a CONSTRAINT NAME\n  { name: 'Elodie', id: 7 },\n  { writeSql:true, execute: true, logQuery: false }\n)"
+            "description": "upsertIf(\n  dataValue('name'),\n  'users', // the DB table\n  'ON CONSTRAINT users_pkey', // a DB column with a unique constraint OR a CONSTRAINT NAME\n  { name: 'Elodie', id: 7 },\n  { writeSql:true, execute: true, logValues: false }\n)"
           },
           {
             "title": "constructor",
@@ -392,7 +392,7 @@
           },
           {
             "title": "example",
-            "description": "upsertMany(\n 'users', 'email', records, { logQuery: false }\n)"
+            "description": "upsertMany(\n 'users', 'email', records, { logValues: false }\n)"
           },
           {
             "title": "constructor",
