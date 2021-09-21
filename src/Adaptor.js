@@ -288,7 +288,7 @@ export function findValue(filter) {
  * @public
  * @example
  * execute(
- *   insert(table, record, {setNull: ["'undefined'", "''"], logQuery: false})
+ *   insert(table, record, {setNull: ["'undefined'", "''"], logValues: false})
  * )(state)
  * @constructor
  * @param {string} table - The target table
@@ -318,7 +318,7 @@ export function insert(table, record, options) {
       )}) VALUES [--REDACTED--]];`;
 
       return new Promise((resolve, reject) => {
-        const queryToLog = options && options.logQuery ? query : safeQuery;
+        const queryToLog = options && options.logValues ? query : safeQuery;
         console.log(`Executing insert via: ${queryToLog}`);
 
         const request = new Request(query, (err, rowCount, rows) => {
@@ -345,7 +345,7 @@ export function insert(table, record, options) {
  * @public
  * @example
  * execute(
- *   insertMany(table, records, { setNull: false, logQuery: false })
+ *   insertMany(table, records, { setNull: false, logValues: false })
  * )(state)
  * @constructor
  * @param {string} table - The target table
@@ -378,7 +378,7 @@ export function insertMany(table, records, options) {
       )}) VALUES [--REDACTED--]];`;
 
       return new Promise((resolve, reject) => {
-        const queryToLog = options && options.logQuery ? query : safeQuery;
+        const queryToLog = options && options.logValues ? query : safeQuery;
         console.log(`Executing insertMany via: ${queryToLog}`);
 
         const request = new Request(query, (err, rowCount, rows) => {
@@ -405,7 +405,7 @@ export function insertMany(table, records, options) {
  * @public
  * @example
  * execute(
- *   upsert(table, uuid, record, { setNull: "'undefined'", logQuery: false})
+ *   upsert(table, uuid, record, { setNull: "'undefined'", logValues: false})
  * )(state)
  * @constructor
  * @param {string} table - The target table
@@ -453,7 +453,7 @@ export function upsert(table, uuid, record, options) {
           INSERT (${insertColumns}) VALUES [--REDACTED--];`;
 
       return new Promise((resolve, reject) => {
-        const queryToLog = options && options.logQuery ? query : safeQuery;
+        const queryToLog = options && options.logValues ? query : safeQuery;
         console.log(`Executing upsert via: ${queryToLog}`);
 
         const request = new Request(query, (err, rowCount, rows) => {
@@ -484,7 +484,7 @@ export function upsert(table, uuid, record, options) {
  *   'users', // the DB table
  *   'ON CONSTRAINT users_pkey', // a DB column with a unique constraint OR a CONSTRAINT NAME
  *   { name: 'Elodie', id: 7 },
- *   { writeSql:true, execute: true, logQuery: false }
+ *   { writeSql:true, execute: true, logValues: false }
  * )
  * @constructor
  * @param {string} logical - a data to check existing value for.
@@ -539,7 +539,7 @@ export function upsertIf(logical, table, uuid, record, options) {
           WHEN NOT MATCHED THEN
             INSERT (${insertColumns}) VALUES [--REDACTED--];`;
 
-        const queryToLog = options && options.logQuery ? query : safeQuery;
+        const queryToLog = options && options.logValues ? query : safeQuery;
         console.log(`Executing upsertIf via: ${queryToLog}`);
 
         const request = new Request(query, (err, rowCount, rows) => {
@@ -566,7 +566,7 @@ export function upsertIf(logical, table, uuid, record, options) {
  * @public
  * @example
  * upsertMany(
- *  'users', 'email', records, { logQuery: false }
+ *  'users', 'email', records, { logValues: false }
  * )
  * @constructor
  * @param {string} table - The target table
@@ -620,7 +620,7 @@ export function upsertMany(table, uuid, records, options) {
         WHEN NOT MATCHED THEN
           INSERT (${insertColumns}) VALUES [--REDACTED--];`;
 
-        const queryToLog = options && options.logQuery ? query : safeQuery;
+        const queryToLog = options && options.logValues ? query : safeQuery;
         console.log(`Executing upsertMany via: ${queryToLog}`);
 
         const request = new Request(query, (err, rowCount, rows) => {
