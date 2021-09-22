@@ -335,7 +335,7 @@ export function insert(table, record, options) {
  * @public
  * @example
  * execute(
- *   insertMany(table, records, { setNull: false, logValues: false })
+ *   insertMany(table, records, { setNull: false, writeSql: true, logValues: false })
  * )(state)
  * @constructor
  * @param {string} table - The target table

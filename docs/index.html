@@ -67,11 +67,17 @@
   `,
 });
 
-sql({ query: `SELECT * FROM Household` });
+sql({
+  query: `SELECT * FROM Household`,
+  options: {
+    writeSql: true, // Keep to true to log query (otherwise make it false).
+    execute: true, // keep to false to not alter DB
+  },
+});
 </code></pre>
 <h2>Find a single value for a table</h2>
 <p>This helper function allows to build a specific query where <code>sql</code> would not be best suited. It returns a single value and not a promise. An example of usage would be in building a mapping object with a value from a lookup table.</p>
-<pre class="prettyprint source lang-js"><code>alterState(async state => {
+<pre class="prettyprint source lang-js"><code>fn(async state => {
   const user = {
     id: 1,
     name: 'Mamadou',
@@ -97,7 +103,8 @@ sql({ query: `SELECT * FROM Household` });
   {
     // The optional `options` argument allows for global string replacement with
     // NULL. This is useful if you want to map an undefined value (e.g., x.name)
-    // to NULL. It DEFAULTS to &quot;'undefined'&quot;, and can be turned off w/ `false`.
+    // to NULL. It can be a single string or an array of strings.
+    // It DEFAULTS to &quot;'undefined'&quot;, and can be turned off w/ `false`.
     setNull: &quot;'undefined'&quot;,
   }
 );
@@ -118,37 +125,81 @@ sql({ query: `SELECT * FROM Household` });
 </code></pre>
 <h2>Insert or Update if a value exist in the record</h2>
 <p>This function will upsert a record only if the logical given is true. In this case we check if <code>dataValue('name')</code> exists.</p>
-<pre class="prettyprint source lang-js"><code>upsertIf(dataValue('name'), 'users', 'user_id', {
-  name: 'Elodie',
-  id: 7,
-});
+<pre class="prettyprint source lang-js"><code>upsertIf(
+  dataValue('name'),
+  'users',
+  'user_id',
+  {
+    name: 'Elodie',
+    id: 7,
+  },
+  // Replace any occurence of '' and 'undefined' to NULL
+  { setNull: [&quot;''&quot;, &quot;'undefined'&quot;], writeSql: true, execute: false }
+);
 </code></pre>
 <h2>Insert Many records</h2>
-<p>This function allows the insert of a set of records inside a table all at once.</p>
+<p>This function allows the insert of a set of records inside a table all at once.
+Pass <code>logQuery</code> option to <code>true</code> to display the query.</p>
 <pre class="prettyprint source lang-js"><code>// Note that insertMany takes a function which returns an array—this helps
 // enforce that each item in the array has the same keys.
-insertMany('SomeDB.dbo.Supplier', state =>
-  state.data.supplierArray.map(s => {
-    return {
-      SupplierNumber: s.id,
-      Name: s.name,
-      Address: s.address,
-    };
-  })
+insertMany(
+  'SomeDB.dbo.Supplier',
+  state =>
+    state.data.supplierArray.map(s => {
+      return {
+        SupplierNumber: s.id,
+        Name: s.name,
+        Address: s.address,
+      };
+    }),
+  { writeSql: true, logValues: true }
 );
 </code></pre>
 <h2>Insert or Update Many records</h2>
 <p>This function inserts or updates many records all at once depending on their existence in the database.</p>
 <pre class="prettyprint source lang-js"><code>// Note that insertMany takes a function which returns an array—this helps
 // enforce that each item in the array has the same keys.
-upsertMany('SomeDB.dbo.Supplier', 'SupplierNumber', state =>
-  state.data.supplierArray.map(s => {
-    return {
-      SupplierNumber: s.id,
-      Name: s.name,
-      Address: s.address,
-    };
-  })
+upsertMany(
+  'SomeDB.dbo.Supplier',
+  'SupplierNumber',
+  state =>
+    state.data.supplierArray.map(s => {
+      return {
+        SupplierNumber: s.id,
+        Name: s.name,
+        Address: s.address,
+      };
+    }),
+  { writeSql: true, execute: false }
+);
+</code></pre>
+<h2>Describe a table from mssql</h2>
+<p>This function is used to fetch the list of columns of a given table in the database.</p>
+<pre class="prettyprint source lang-js"><code>describeTable('users', { writeSql: false, execute: true });
+</code></pre>
+<h2>Create a table in the database</h2>
+<p>This function allows to create a table in a database from a given array of columns. The key <code>identity</code> can be use for a column to auto-generate a value.</p>
+<pre class="prettyprint source lang-js"><code>insertTable('users', state =>
+  state.data.map(column => ({
+    name: column.name,
+    type: column.type,
+    required: true, // optional
+    unique: false, // optional - set to true for unique constraint
+  }))
+);
+</code></pre>
+<h2>Alter a table in the database</h2>
+<p>This function allows to add new columns to a table. Beware of the fact that you cannot add new columns with names that already exist in the table.</p>
+<pre class="prettyprint source lang-js"><code>modifyTable(
+  'users',
+  state =>
+    state.data.map(newColumn => ({
+      name: newColumn.name,
+      type: newColumn.type,
+      required: true, // optional
+      unique: false, // optional - set to true for unique constraint
+    })),
+  { writeSql: false, execute: true }
 );
 </code></pre>
 <h2>Development</h2>
@@ -172,7 +223,7 @@ upsertMany('SomeDB.dbo.Supplier', 'SupplierNumber', state =>
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.6</a> on Tue Aug 03 2021 14:57:47 GMT+0000 (Greenwich Mean Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.6</a> on Wed Sep 22 2021 10:47:32 GMT+0000 (Greenwich Mean Time)
 </footer>
 
 <script> prettyPrint(); </script>

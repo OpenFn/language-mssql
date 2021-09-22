@@ -48,6 +48,12 @@ Object.defineProperty(exports, "alterState", {
     return _languageCommon.alterState;
   }
 });
+Object.defineProperty(exports, "fn", {
+  enumerable: true,
+  get: function get() {
+    return _languageCommon.fn;
+  }
+});
 Object.defineProperty(exports, "combine", {
   enumerable: true,
   get: function get() {
@@ -252,25 +258,31 @@ function addRowsToRefs(state, rows) {
 /**
  * Returns a flatten object of the rows (array of arrays) with rowCount.
  * @function
+ * @param {State} state
  * @param {array} rows - the array of rows returned from the sql query
  * @returns {State}
  */
 
 
-function flattenRows(rows) {
+function flattenRows(state, rows) {
   var obj = [];
   rows.forEach(function (row) {
     return obj.push({
       column_name: row[0].value
     });
   });
-  return {
+  var data = {
     rowCount: rows.length,
     rows: obj
   };
+  return _objectSpread(_objectSpread({}, state), {}, {
+    response: {
+      body: data
+    }
+  });
 }
 
-function queryHandler(state, query, options) {
+function queryHandler(state, query, callback, options) {
   var connection = state.connection;
   return new Promise(function (resolve, reject) {
     if (options) {
@@ -281,7 +293,8 @@ function queryHandler(state, query, options) {
 
       if (options.execute === false) {
         console.log('Not executing query; options.execute === false');
-        resolve('Query not executed.');
+        resolve(state);
+        return state;
       }
     }
 
@@ -291,16 +304,10 @@ function queryHandler(state, query, options) {
         throw err;
       } else {
         console.log("Finished: ".concat(rowCount, " row(s)."));
-        resolve(flattenRows(rows));
+        resolve(callback(state, rows));
       }
     });
-    if (!options || options.execute) connection.execSql(request);
-  }).then(function (data) {
-    return _objectSpread(_objectSpread({}, state), {}, {
-      response: {
-        body: data
-      }
-    });
+    connection.execSql(request);
   });
 }
 /**
@@ -325,19 +332,8 @@ function sql(params) {
           query = _expandReferences.query,
           options = _expandReferences.options;
 
-      return new Promise(function (resolve, reject) {
-        console.log("Executing query: ".concat(query));
-        var request = new _tedious.Request(query, function (err, rowCount, rows) {
-          if (err) {
-            console.error(err.message);
-            throw err;
-          } else {
-            console.log("Finished: ".concat(rowCount, " row(s)."));
-            resolve(addRowsToRefs(state, rows));
-          }
-        });
-        connection.execSql(request);
-      });
+      console.log("Preparing to execute sql statement: ".concat(query));
+      return queryHandler(state, query, flattenRows, options);
     } catch (e) {
       connection.close();
       throw e;
@@ -350,18 +346,18 @@ function escapeRegExp(string) {
 }
 
 function handleValues(sqlString, nullString) {
-  var sql = '';
+  var sql = sqlString;
 
   if (nullString == false) {
     return sqlString;
-  } else if (_typeof(nullString) === 'object') {
+  } else if (Array.isArray(nullString)) {
     nullString.forEach(function (ns) {
       var re = new RegExp(escapeRegExp(ns), 'g');
-      console.log(re);
-      sql = sqlString.replace(re, 'NULL');
-      return sql;
+      sql = sql.replace(re, 'NULL');
     });
     return sql;
+  } else if (_typeof(nullString) === 'object') {
+    throw 'setNull must be a string or an array of strings.';
   }
 
   var re = new RegExp(escapeRegExp(nullString), 'g');
@@ -452,7 +448,7 @@ function findValue(filter) {
  * @public
  * @example
  * execute(
- *   insert(table, record, {setNull: "'undefined'"})
+ *   insert(table, record, {setNull: ["'undefined'", "''"], logValues: false})
  * )(state)
  * @constructor
  * @param {string} table - The target table
@@ -475,17 +471,9 @@ function insert(table, record, options) {
       var query = handleValues("INSERT INTO ".concat(table, " (").concat(columns.join(', '), ") VALUES ('").concat(values, "');"), handleOptions(options));
       var safeQuery = "INSERT INTO ".concat(table, " (").concat(columns.join(', '), ") VALUES [--REDACTED--]];");
       return new Promise(function (resolve, reject) {
-        console.log("Executing insert via: ".concat(safeQuery));
-        var request = new _tedious.Request(query, function (err, rowCount, rows) {
-          if (err) {
-            console.error(err.message);
-            throw err;
-          } else {
-            console.log("Finished: ".concat(rowCount, " row(s)."));
-            resolve(addRowsToRefs(state, rows));
-          }
-        });
-        connection.execSql(request);
+        var queryToLog = options &amp;&amp; options.logValues ? query : safeQuery;
+        console.log("Executing insert via: ".concat(queryToLog));
+        resolve(queryHandler(state, query, addRowsToRefs, options));
       });
     } catch (e) {
       connection.close();
@@ -498,7 +486,7 @@ function insert(table, record, options) {
  * @public
  * @example
  * execute(
- *   insertMany(table, records, { setNull: false })
+ *   insertMany(table, records, { setNull: false, writeSql: true, logValues: false })
  * )(state)
  * @constructor
  * @param {string} table - The target table
@@ -522,17 +510,9 @@ function insertMany(table, records, options) {
       var query = handleValues("INSERT INTO ".concat(table, " (").concat(columns.join(', '), ") VALUES ").concat(valueSets.join(', '), ";"), handleOptions(options));
       var safeQuery = "INSERT INTO ".concat(table, " (").concat(columns.join(', '), ") VALUES [--REDACTED--]];");
       return new Promise(function (resolve, reject) {
-        console.log("Executing insert many via: ".concat(safeQuery));
-        var request = new _tedious.Request(query, function (err, rowCount, rows) {
-          if (err) {
-            console.error(err.message);
-            throw err;
-          } else {
-            console.log("Finished: ".concat(rowCount, " row(s)."));
-            resolve(addRowsToRefs(state, rows));
-          }
-        });
-        connection.execSql(request);
+        var queryToLog = options &amp;&amp; options.logValues ? query : safeQuery;
+        console.log("Executing insertMany via: ".concat(queryToLog));
+        resolve(queryHandler(state, query, addRowsToRefs, options));
       });
     } catch (e) {
       connection.close();
@@ -545,7 +525,7 @@ function insertMany(table, records, options) {
  * @public
  * @example
  * execute(
- *   upsert(table, uuid, record, { setNull: "'undefined'"})
+ *   upsert(table, uuid, record, { setNull: "'undefined'", logValues: false})
  * )(state)
  * @constructor
  * @param {string} table - The target table
@@ -576,17 +556,9 @@ function upsert(table, uuid, record, options) {
       var query = handleValues("MERGE ".concat(table, " AS [Target]\n        USING (SELECT ").concat(selectValues, ") AS [Source] \n        ON [Target].").concat(uuid, " = [Source].").concat(uuid, "\n        WHEN MATCHED THEN\n          UPDATE SET ").concat(updateValues, " \n        WHEN NOT MATCHED THEN\n          INSERT (").concat(insertColumns, ") VALUES (").concat(insertValues, ");"), handleOptions(options));
       var safeQuery = "MERGE ".concat(table, " AS [Target]\n        USING (SELECT [--REDACTED--]) \n        ON [Target].[--VALUE--] = [Source].[--VALUE--]\n        WHEN MATCHED THEN\n          UPDATE SET [--REDACTED--] \n        WHEN NOT MATCHED THEN\n          INSERT (").concat(insertColumns, ") VALUES [--REDACTED--];");
       return new Promise(function (resolve, reject) {
-        console.log("Executing upsert via : ".concat(safeQuery));
-        var request = new _tedious.Request(query, function (err, rowCount, rows) {
-          if (err) {
-            console.error(err.message);
-            throw err;
-          } else {
-            console.log("Finished: ".concat(rowCount, " row(s)."));
-            resolve(addRowsToRefs(state, rows));
-          }
-        });
-        connection.execSql(request);
+        var queryToLog = options &amp;&amp; options.logValues ? query : safeQuery;
+        console.log("Executing upsert via: ".concat(queryToLog));
+        resolve(queryHandler(state, query, addRowsToRefs, options));
       });
     } catch (e) {
       connection.close();
@@ -603,7 +575,7 @@ function upsert(table, uuid, record, options) {
  *   'users', // the DB table
  *   'ON CONSTRAINT users_pkey', // a DB column with a unique constraint OR a CONSTRAINT NAME
  *   { name: 'Elodie', id: 7 },
- *   { writeSql:true, execute: true }
+ *   { writeSql:true, execute: true, logValues: false }
  * )
  * @constructor
  * @param {string} logical - a data to check existing value for.
@@ -642,17 +614,9 @@ function upsertIf(logical, table, uuid, record, options) {
         }).join(', ');
         var query = handleValues("MERGE ".concat(table, " AS [Target]\n          USING (SELECT ").concat(selectValues, ") AS [Source] \n          ON [Target].").concat(uuid, " = [Source].").concat(uuid, "\n          WHEN MATCHED THEN\n            UPDATE SET ").concat(updateValues, " \n          WHEN NOT MATCHED THEN\n            INSERT (").concat(insertColumns, ") VALUES (").concat(insertValues, ");"), handleOptions(options));
         var safeQuery = "MERGE ".concat(table, " AS [Target]\n          USING (SELECT [--REDACTED--]) \n          ON [Target].[--VALUE--] = [Source].[--VALUE--]\n          WHEN MATCHED THEN\n            UPDATE SET [--REDACTED--] \n          WHEN NOT MATCHED THEN\n            INSERT (").concat(insertColumns, ") VALUES [--REDACTED--];");
-        console.log("Executing upsert via : ".concat(safeQuery));
-        var request = new _tedious.Request(query, function (err, rowCount, rows) {
-          if (err) {
-            console.error(err.message);
-            throw err;
-          } else {
-            console.log("Finished: ".concat(rowCount, " row(s)."));
-            resolve(addRowsToRefs(state, rows));
-          }
-        });
-        connection.execSql(request);
+        var queryToLog = options &amp;&amp; options.logValues ? query : safeQuery;
+        console.log("Executing upsertIf via: ".concat(queryToLog));
+        resolve(queryHandler(state, query, addRowsToRefs, options));
       });
     } catch (e) {
       connection.close();
@@ -665,7 +629,7 @@ function upsertIf(logical, table, uuid, record, options) {
  * @public
  * @example
  * upsertMany(
- *  'users', 'email', records
+ *  'users', 'email', records, { logValues: false }
  * )
  * @constructor
  * @param {string} table - The target table
@@ -702,17 +666,9 @@ function upsertMany(table, uuid, records, options) {
         }).join(', ');
         var query = handleValues("MERGE ".concat(table, " AS [Target]\n        USING (VALUES ").concat(valueSets.join(', '), ") AS [Source] (").concat(insertColumns, ")\n        ON [Target].").concat(uuid, " = [Source].").concat(uuid, "\n        WHEN MATCHED THEN\n          UPDATE SET ").concat(updateValues, "\n        WHEN NOT MATCHED THEN\n          INSERT (").concat(insertColumns, ") VALUES (").concat(insertValues, ");"), handleOptions(options));
         var safeQuery = "MERGE ".concat(table, " AS [Target]\n        USING (VALUES [--REDACTED--]) AS [SOURCE] (").concat(insertColumns, ")\n        ON [Target].[--VALUE--] = [Source].[--VALUE--]\n        WHEN MATCHED THEN\n          UPDATE SET [--REDACTED--] \n        WHEN NOT MATCHED THEN\n          INSERT (").concat(insertColumns, ") VALUES [--REDACTED--];");
-        console.log("Executing upsert via : ".concat(safeQuery));
-        var request = new _tedious.Request(query, function (err, rowCount, rows) {
-          if (err) {
-            console.error(err.message);
-            throw err;
-          } else {
-            console.log("Finished: ".concat(rowCount, " row(s)."));
-            resolve(addRowsToRefs(state, rows));
-          }
-        });
-        connection.execSql(request);
+        var queryToLog = options &amp;&amp; options.logValues ? query : safeQuery;
+        console.log("Executing upsertMany via: ".concat(queryToLog));
+        resolve(queryHandler(state, query, addRowsToRefs, options));
       });
     } catch (e) {
       connection.close();
@@ -740,7 +696,7 @@ function describeTable(tableName, options) {
     try {
       var query = "SELECT column_name\n          FROM information_schema.columns \n          WHERE table_name = '".concat(name, "'\n          ORDER BY ordinal_position");
       console.log('Preparing to describe table via:', query);
-      return queryHandler(state, query, options);
+      return queryHandler(state, query, flattenRows, options);
     } catch (e) {
       connection.close();
       throw e;
@@ -785,7 +741,7 @@ function insertTable(tableName, columns, options) {
         }).join(', ');
         var query = "CREATE TABLE ".concat(tableName, " (\n        ").concat(structureData, "\n      );");
         console.log('Preparing to create table via:', query);
-        resolve(queryHandler(state, query, options));
+        resolve(queryHandler(state, query, flattenRows, options));
       });
     } catch (e) {
       connection.close();
@@ -831,15 +787,14 @@ function modifyTable(tableName, columns, options) {
         }).join(', ');
         var query = "ALTER TABLE ".concat(tableName, " ADD ").concat(structureData, ";");
         console.log('Preparing to modify table via:', query);
-        resolve(queryHandler(state, query, options));
+        resolve(queryHandler(state, query, flattenRows, options));
       });
     } catch (e) {
       connection.close();
       throw e;
     }
   };
-}
-</code></pre>
+}</code></pre>
         </article>
     </section>
 
@@ -855,7 +810,7 @@ function modifyTable(tableName, columns, options) {
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.6</a> on Tue Aug 03 2021 14:57:47 GMT+0000 (Greenwich Mean Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.6</a> on Wed Sep 22 2021 10:47:31 GMT+0000 (Greenwich Mean Time)
 </footer>
 
 <script> prettyPrint(); </script>

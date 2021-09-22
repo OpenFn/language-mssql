@@ -45,7 +45,7 @@ sql({
 This helper function allows to build a specific query where `sql` would not be best suited. It returns a single value and not a promise. An example of usage would be in building a mapping object with a value from a lookup table.
 
 ```js
-alterState(async state => {
+fn(async state => {
   const user = {
     id: 1,
     name: 'Mamadou',
@@ -113,7 +113,7 @@ upsertIf(
     id: 7,
   },
   // Replace any occurence of '' and 'undefined' to NULL
-  { setNull: ["''", "'undefined'"] }
+  { setNull: ["''", "'undefined'"], writeSql: true, execute: false }
 );
 ```
 
@@ -125,14 +125,17 @@ Pass `logQuery` option to `true` to display the query.
 ```js
 // Note that insertMany takes a function which returns an array—this helps
 // enforce that each item in the array has the same keys.
-insertMany('SomeDB.dbo.Supplier', state =>
-  state.data.supplierArray.map(s => {
-    return {
-      SupplierNumber: s.id,
-      Name: s.name,
-      Address: s.address,
-    };
-  })
+insertMany(
+  'SomeDB.dbo.Supplier',
+  state =>
+    state.data.supplierArray.map(s => {
+      return {
+        SupplierNumber: s.id,
+        Name: s.name,
+        Address: s.address,
+      };
+    }),
+  { writeSql: true, logValues: true }
 );
 ```
 
@@ -143,14 +146,60 @@ This function inserts or updates many records all at once depending on their exi
 ```js
 // Note that insertMany takes a function which returns an array—this helps
 // enforce that each item in the array has the same keys.
-upsertMany('SomeDB.dbo.Supplier', 'SupplierNumber', state =>
-  state.data.supplierArray.map(s => {
-    return {
-      SupplierNumber: s.id,
-      Name: s.name,
-      Address: s.address,
-    };
-  })
+upsertMany(
+  'SomeDB.dbo.Supplier',
+  'SupplierNumber',
+  state =>
+    state.data.supplierArray.map(s => {
+      return {
+        SupplierNumber: s.id,
+        Name: s.name,
+        Address: s.address,
+      };
+    }),
+  { writeSql: true, execute: false }
+);
+```
+
+
+## Describe a table from mssql
+
+This function is used to fetch the list of columns of a given table in the database.
+
+```js
+describeTable('users', { writeSql: false, execute: true });
+```
+
+## Create a table in the database
+
+This function allows to create a table in a database from a given array of columns. The key `identity` can be use for a column to auto-generate a value.
+
+```js
+insertTable('users', state =>
+  state.data.map(column => ({
+    name: column.name,
+    type: column.type,
+    required: true, // optional
+    unique: false, // optional - set to true for unique constraint
+  }))
+);
+```
+
+## Alter a table in the database
+
+This function allows to add new columns to a table. Beware of the fact that you cannot add new columns with names that already exist in the table.
+
+```js
+modifyTable(
+  'users',
+  state =>
+    state.data.map(newColumn => ({
+      name: newColumn.name,
+      type: newColumn.type,
+      required: true, // optional
+      unique: false, // optional - set to true for unique constraint
+    })),
+  { writeSql: false, execute: true }
 );
 ```
 

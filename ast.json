@@ -169,7 +169,7 @@
           },
           {
             "title": "example",
-            "description": "execute(\n  insertMany(table, records, { setNull: false, logValues: false })\n)(state)"
+            "description": "execute(\n  insertMany(table, records, { setNull: false, writeSql: true, logValues: false })\n)(state)"
           },
           {
             "title": "constructor",
