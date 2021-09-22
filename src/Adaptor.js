@@ -114,6 +114,7 @@ function addRowsToRefs(state, rows) {
 /**
  * Returns a flatten object of the rows (array of arrays) with rowCount.
  * @function
+ * @param {State} state
  * @param {array} rows - the array of rows returned from the sql query
  * @returns {State}
  */
@@ -136,7 +137,7 @@ function queryHandler(state, query, callback, options) {
 
       if (options.execute === false) {
         console.log('Not executing query; options.execute === false');
-        resolve('Query not executed.');
+        resolve(state);
         return state;
       }
     }
@@ -150,10 +151,8 @@ function queryHandler(state, query, callback, options) {
         resolve(callback(state, rows));
       }
     });
-    if (!options || options.execute) connection.execSql(request);
-  }); /* .then(data => {
-    return { ...state, response: { body: data } };
-  }); */
+    connection.execSql(request);
+  });
 }
 
 /**
@@ -322,17 +321,7 @@ export function insert(table, record, options) {
         const queryToLog = options && options.logValues ? query : safeQuery;
         console.log(`Executing insert via: ${queryToLog}`);
 
-        const request = new Request(query, (err, rowCount, rows) => {
-          if (err) {
-            console.error(err.message);
-            throw err;
-          } else {
-            console.log(`Finished: ${rowCount} row(s).`);
-            resolve(addRowsToRefs(state, rows));
-          }
-        });
-
-        connection.execSql(request);
+        resolve(queryHandler(state, query, addRowsToRefs, options));
       });
     } catch (e) {
       connection.close();
@@ -382,17 +371,7 @@ export function insertMany(table, records, options) {
         const queryToLog = options && options.logValues ? query : safeQuery;
         console.log(`Executing insertMany via: ${queryToLog}`);
 
-        const request = new Request(query, (err, rowCount, rows) => {
-          if (err) {
-            console.error(err.message);
-            throw err;
-          } else {
-            console.log(`Finished: ${rowCount} row(s).`);
-            resolve(addRowsToRefs(state, rows));
-          }
-        });
-
-        connection.execSql(request);
+        resolve(queryHandler(state, query, addRowsToRefs, options));
       });
     } catch (e) {
       connection.close();
@@ -457,17 +436,7 @@ export function upsert(table, uuid, record, options) {
         const queryToLog = options && options.logValues ? query : safeQuery;
         console.log(`Executing upsert via: ${queryToLog}`);
 
-        const request = new Request(query, (err, rowCount, rows) => {
-          if (err) {
-            console.error(err.message);
-            throw err;
-          } else {
-            console.log(`Finished: ${rowCount} row(s).`);
-            resolve(addRowsToRefs(state, rows));
-          }
-        });
-
-        connection.execSql(request);
+        resolve(queryHandler(state, query, addRowsToRefs, options));
       });
     } catch (e) {
       connection.close();
@@ -543,17 +512,7 @@ export function upsertIf(logical, table, uuid, record, options) {
         const queryToLog = options && options.logValues ? query : safeQuery;
         console.log(`Executing upsertIf via: ${queryToLog}`);
 
-        const request = new Request(query, (err, rowCount, rows) => {
-          if (err) {
-            console.error(err.message);
-            throw err;
-          } else {
-            console.log(`Finished: ${rowCount} row(s).`);
-            resolve(addRowsToRefs(state, rows));
-          }
-        });
-
-        connection.execSql(request);
+        resolve(queryHandler(state, query, addRowsToRefs, options));
       });
     } catch (e) {
       connection.close();
@@ -625,8 +584,6 @@ export function upsertMany(table, uuid, records, options) {
         console.log(`Executing upsertMany via: ${queryToLog}`);
 
         resolve(queryHandler(state, query, addRowsToRefs, options));
-
-        connection.execSql(request);
       });
     } catch (e) {
       connection.close();
