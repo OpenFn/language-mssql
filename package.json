@@ -1,6 +1,6 @@
 {
   "name": "@openfn/language-mssql",
-  "version": "2.6.8",
+  "version": "2.6.9",
   "description": "A Microsoft SQL language pack for OpenFn",
   "main": "lib/index.js",
   "homepage": "https://docs.openfn.org",
