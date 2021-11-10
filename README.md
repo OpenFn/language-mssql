@@ -76,7 +76,7 @@ insert(
     // NULL. This is useful if you want to map an undefined value (e.g., x.name)
     // to NULL. It can be a single string or an array of strings.
     // It DEFAULTS to "'undefined'", and can be turned off w/ `false`.
-    setNull: "'undefined'",
+    setNull: "'undefined'", logValues: true
   }
 );
 ```
@@ -95,7 +95,7 @@ upsert(
     Address: 'Now I can tell!',
   },
   // Do NOT replace any instances of 'undefined' in the final SQL statement.
-  { setNull: false }
+  { setNull: false, logValues: true }
 );
 ```
 
@@ -113,7 +113,7 @@ upsertIf(
     id: 7,
   },
   // Replace any occurence of '' and 'undefined' to NULL
-  { setNull: ["''", "'undefined'"], writeSql: true, execute: false }
+  { setNull: ["''", "'undefined'"], writeSql: true, execute: false, logValues: true }
 );
 ```
 
@@ -157,7 +157,7 @@ upsertMany(
         Address: s.address,
       };
     }),
-  { writeSql: true, execute: false }
+  { writeSql: true, execute: false, logValues: true }
 );
 ```
 
