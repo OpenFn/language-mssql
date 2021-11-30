@@ -76,7 +76,8 @@ insert(
     // NULL. This is useful if you want to map an undefined value (e.g., x.name)
     // to NULL. It can be a single string or an array of strings.
     // It DEFAULTS to "'undefined'", and can be turned off w/ `false`.
-    setNull: "'undefined'", logValues: true
+    setNull: "'undefined'",
+    logValues: true,
   }
 );
 ```
@@ -113,7 +114,12 @@ upsertIf(
     id: 7,
   },
   // Replace any occurence of '' and 'undefined' to NULL
-  { setNull: ["''", "'undefined'"], writeSql: true, execute: false, logValues: true }
+  {
+    setNull: ["''", "'undefined'"],
+    writeSql: true,
+    execute: false,
+    logValues: true,
+  }
 );
 ```
 
@@ -161,6 +167,24 @@ upsertMany(
 );
 ```
 
+In case we need to check on multiple columns before upserting, we can have an array of `uuids`.
+
+```js
+upsertMany(
+  'SomeDB.dbo.Supplier',
+  ['SupplierNumber', 'SupplierCode'],
+  state =>
+    state.data.supplierArray.map(s => {
+      return {
+        SupplierNumber: s.id,
+        Name: s.name,
+        Address: s.address,
+        SupplierCode: s.code,
+      };
+    }),
+  { writeSql: true, execute: false, logValues: true }
+);
+```
 
 ## Describe a table from mssql
 

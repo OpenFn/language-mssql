@@ -387,6 +387,9 @@ export function insertMany(table, records, options) {
  * execute(
  *   upsert(table, uuid, record, { setNull: "'undefined'", logValues: false})
  * )(state)
+ * execute(
+ *   upsert(table, [uuid1, uuid2], record, { setNull: "'undefined'", logValues: false})
+ * )(state)
  * @constructor
  * @param {string} table - The target table
  * @param {string} uuid - The uuid column to determine a matching/existing record
@@ -413,10 +416,19 @@ export function upsert(table, uuid, record, options) {
       const insertColumns = columns.join(', ');
       const insertValues = columns.map(key => `[Source].${key}`).join(', ');
 
+      const constraint = [];
+      if (Array.isArray(uuid)) {
+        uuid.forEach(key => {
+          constraint.push(`[Target].${key} = [Source].${key}`);
+        });
+      } else {
+        constraint.push(`[Target].${uuid} = [Source].${uuid}`);
+      }
+
       const query = handleValues(
         `MERGE ${table} AS [Target]
         USING (SELECT ${selectValues}) AS [Source] 
-        ON [Target].${uuid} = [Source].${uuid}
+        ON ${constraint.join(' AND ')}
         WHEN MATCHED THEN
           UPDATE SET ${updateValues} 
         WHEN NOT MATCHED THEN
@@ -452,7 +464,7 @@ export function upsert(table, uuid, record, options) {
  * upsertIf(
  *   dataValue('name'),
  *   'users', // the DB table
- *   'ON CONSTRAINT users_pkey', // a DB column with a unique constraint OR a CONSTRAINT NAME
+ *   'uuid', // a DB column with a unique constraint
  *   { name: 'Elodie', id: 7 },
  *   { writeSql:true, execute: true, logValues: false }
  * )
@@ -490,10 +502,19 @@ export function upsertIf(logical, table, uuid, record, options) {
         const insertColumns = columns.join(', ');
         const insertValues = columns.map(key => `[Source].${key}`).join(', ');
 
+        const constraint = [];
+        if (Array.isArray(uuid)) {
+          uuid.forEach(key => {
+            constraint.push(`[Target].${key} = [Source].${key}`);
+          });
+        } else {
+          constraint.push(`[Target].${uuid} = [Source].${uuid}`);
+        }
+
         const query = handleValues(
           `MERGE ${table} AS [Target]
           USING (SELECT ${selectValues}) AS [Source] 
-          ON [Target].${uuid} = [Source].${uuid}
+          ON ${constraint.join(' AND ')}
           WHEN MATCHED THEN
             UPDATE SET ${updateValues} 
           WHEN NOT MATCHED THEN
@@ -528,6 +549,9 @@ export function upsertIf(logical, table, uuid, record, options) {
  * upsertMany(
  *  'users', 'email', records, { logValues: false }
  * )
+ * upsertMany(
+ *  'users', ['email', 'phone'], records, { logValues: false }
+ * )
  * @constructor
  * @param {string} table - The target table
  * @param {string} uuid - The uuid column to determine a matching/existing record
@@ -561,10 +585,19 @@ export function upsertMany(table, uuid, records, options) {
           .map(key => `[Target].${key}=[Source].${key}`)
           .join(', ');
 
+        const constraint = [];
+        if (Array.isArray(uuid)) {
+          uuid.forEach(key => {
+            constraint.push(`[Target].${key} = [Source].${key}`);
+          });
+        } else {
+          constraint.push(`[Target].${uuid} = [Source].${uuid}`);
+        }
+
         const query = handleValues(
           `MERGE ${table} AS [Target]
         USING (VALUES ${valueSets.join(', ')}) AS [Source] (${insertColumns})
-        ON [Target].${uuid} = [Source].${uuid}
+        ON ${constraint.join(' AND ')}
         WHEN MATCHED THEN
           UPDATE SET ${updateValues}
         WHEN NOT MATCHED THEN
