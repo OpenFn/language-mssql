@@ -234,7 +234,7 @@
           },
           {
             "title": "example",
-            "description": "execute(\n  upsert(table, uuid, record, { setNull: \"'undefined'\", logValues: false})\n)(state)"
+            "description": "execute(\n  upsert(table, uuid, record, { setNull: \"'undefined'\", logValues: false})\n)(state)\nexecute(\n  upsert(table, [uuid1, uuid2], record, { setNull: \"'undefined'\", logValues: false})\n)(state)"
           },
           {
             "title": "constructor",
@@ -309,7 +309,7 @@
           },
           {
             "title": "example",
-            "description": "upsertIf(\n  dataValue('name'),\n  'users', // the DB table\n  'ON CONSTRAINT users_pkey', // a DB column with a unique constraint OR a CONSTRAINT NAME\n  { name: 'Elodie', id: 7 },\n  { writeSql:true, execute: true, logValues: false }\n)"
+            "description": "upsertIf(\n  dataValue('name'),\n  'users', // the DB table\n  'uuid', // a DB column with a unique constraint\n  { name: 'Elodie', id: 7 },\n  { writeSql:true, execute: true, logValues: false }\n)"
           },
           {
             "title": "constructor",
@@ -392,7 +392,7 @@
           },
           {
             "title": "example",
-            "description": "upsertMany(\n 'users', 'email', records, { logValues: false }\n)"
+            "description": "upsertMany(\n 'users', 'email', records, { logValues: false }\n)\nupsertMany(\n 'users', ['email', 'phone'], records, { logValues: false }\n)"
           },
           {
             "title": "constructor",

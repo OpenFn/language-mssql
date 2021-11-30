@@ -527,6 +527,9 @@ function insertMany(table, records, options) {
  * execute(
  *   upsert(table, uuid, record, { setNull: "'undefined'", logValues: false})
  * )(state)
+ * execute(
+ *   upsert(table, [uuid1, uuid2], record, { setNull: "'undefined'", logValues: false})
+ * )(state)
  * @constructor
  * @param {string} table - The target table
  * @param {string} uuid - The uuid column to determine a matching/existing record
@@ -553,7 +556,17 @@ function upsert(table, uuid, record, options) {
       var insertValues = columns.map(function (key) {
         return "[Source].".concat(key);
       }).join(', ');
-      var query = handleValues("MERGE ".concat(table, " AS [Target]\n        USING (SELECT ").concat(selectValues, ") AS [Source] \n        ON [Target].").concat(uuid, " = [Source].").concat(uuid, "\n        WHEN MATCHED THEN\n          UPDATE SET ").concat(updateValues, " \n        WHEN NOT MATCHED THEN\n          INSERT (").concat(insertColumns, ") VALUES (").concat(insertValues, ");"), handleOptions(options));
+      var constraint = [];
+
+      if (Array.isArray(uuid)) {
+        uuid.forEach(function (key) {
+          constraint.push("[Target].".concat(key, " = [Source].").concat(key));
+        });
+      } else {
+        constraint.push("[Target].".concat(uuid, " = [Source].").concat(uuid));
+      }
+
+      var query = handleValues("MERGE ".concat(table, " AS [Target]\n        USING (SELECT ").concat(selectValues, ") AS [Source] \n        ON ").concat(constraint.join(' AND '), "\n        WHEN MATCHED THEN\n          UPDATE SET ").concat(updateValues, " \n        WHEN NOT MATCHED THEN\n          INSERT (").concat(insertColumns, ") VALUES (").concat(insertValues, ");"), handleOptions(options));
       var safeQuery = "MERGE ".concat(table, " AS [Target]\n        USING (SELECT [--REDACTED--]) \n        ON [Target].[--VALUE--] = [Source].[--VALUE--]\n        WHEN MATCHED THEN\n          UPDATE SET [--REDACTED--] \n        WHEN NOT MATCHED THEN\n          INSERT (").concat(insertColumns, ") VALUES [--REDACTED--];");
       return new Promise(function (resolve, reject) {
         var queryToLog = options &amp;&amp; options.logValues ? query : safeQuery;
@@ -573,7 +586,7 @@ function upsert(table, uuid, record, options) {
  * upsertIf(
  *   dataValue('name'),
  *   'users', // the DB table
- *   'ON CONSTRAINT users_pkey', // a DB column with a unique constraint OR a CONSTRAINT NAME
+ *   'uuid', // a DB column with a unique constraint
  *   { name: 'Elodie', id: 7 },
  *   { writeSql:true, execute: true, logValues: false }
  * )
@@ -612,7 +625,17 @@ function upsertIf(logical, table, uuid, record, options) {
         var insertValues = columns.map(function (key) {
           return "[Source].".concat(key);
         }).join(', ');
-        var query = handleValues("MERGE ".concat(table, " AS [Target]\n          USING (SELECT ").concat(selectValues, ") AS [Source] \n          ON [Target].").concat(uuid, " = [Source].").concat(uuid, "\n          WHEN MATCHED THEN\n            UPDATE SET ").concat(updateValues, " \n          WHEN NOT MATCHED THEN\n            INSERT (").concat(insertColumns, ") VALUES (").concat(insertValues, ");"), handleOptions(options));
+        var constraint = [];
+
+        if (Array.isArray(uuid)) {
+          uuid.forEach(function (key) {
+            constraint.push("[Target].".concat(key, " = [Source].").concat(key));
+          });
+        } else {
+          constraint.push("[Target].".concat(uuid, " = [Source].").concat(uuid));
+        }
+
+        var query = handleValues("MERGE ".concat(table, " AS [Target]\n          USING (SELECT ").concat(selectValues, ") AS [Source] \n          ON ").concat(constraint.join(' AND '), "\n          WHEN MATCHED THEN\n            UPDATE SET ").concat(updateValues, " \n          WHEN NOT MATCHED THEN\n            INSERT (").concat(insertColumns, ") VALUES (").concat(insertValues, ");"), handleOptions(options));
         var safeQuery = "MERGE ".concat(table, " AS [Target]\n          USING (SELECT [--REDACTED--]) \n          ON [Target].[--VALUE--] = [Source].[--VALUE--]\n          WHEN MATCHED THEN\n            UPDATE SET [--REDACTED--] \n          WHEN NOT MATCHED THEN\n            INSERT (").concat(insertColumns, ") VALUES [--REDACTED--];");
         var queryToLog = options &amp;&amp; options.logValues ? query : safeQuery;
         console.log("Executing upsertIf via: ".concat(queryToLog));
@@ -630,6 +653,9 @@ function upsertIf(logical, table, uuid, record, options) {
  * @example
  * upsertMany(
  *  'users', 'email', records, { logValues: false }
+ * )
+ * upsertMany(
+ *  'users', ['email', 'phone'], records, { logValues: false }
  * )
  * @constructor
  * @param {string} table - The target table
@@ -664,7 +690,17 @@ function upsertMany(table, uuid, records, options) {
         var updateValues = columns.map(function (key) {
           return "[Target].".concat(key, "=[Source].").concat(key);
         }).join(', ');
-        var query = handleValues("MERGE ".concat(table, " AS [Target]\n        USING (VALUES ").concat(valueSets.join(', '), ") AS [Source] (").concat(insertColumns, ")\n        ON [Target].").concat(uuid, " = [Source].").concat(uuid, "\n        WHEN MATCHED THEN\n          UPDATE SET ").concat(updateValues, "\n        WHEN NOT MATCHED THEN\n          INSERT (").concat(insertColumns, ") VALUES (").concat(insertValues, ");"), handleOptions(options));
+        var constraint = [];
+
+        if (Array.isArray(uuid)) {
+          uuid.forEach(function (key) {
+            constraint.push("[Target].".concat(key, " = [Source].").concat(key));
+          });
+        } else {
+          constraint.push("[Target].".concat(uuid, " = [Source].").concat(uuid));
+        }
+
+        var query = handleValues("MERGE ".concat(table, " AS [Target]\n        USING (VALUES ").concat(valueSets.join(', '), ") AS [Source] (").concat(insertColumns, ")\n        ON ").concat(constraint.join(' AND '), "\n        WHEN MATCHED THEN\n          UPDATE SET ").concat(updateValues, "\n        WHEN NOT MATCHED THEN\n          INSERT (").concat(insertColumns, ") VALUES (").concat(insertValues, ");"), handleOptions(options));
         var safeQuery = "MERGE ".concat(table, " AS [Target]\n        USING (VALUES [--REDACTED--]) AS [SOURCE] (").concat(insertColumns, ")\n        ON [Target].[--VALUE--] = [Source].[--VALUE--]\n        WHEN MATCHED THEN\n          UPDATE SET [--REDACTED--] \n        WHEN NOT MATCHED THEN\n          INSERT (").concat(insertColumns, ") VALUES [--REDACTED--];");
         var queryToLog = options &amp;&amp; options.logValues ? query : safeQuery;
         console.log("Executing upsertMany via: ".concat(queryToLog));
@@ -810,7 +846,7 @@ function modifyTable(tableName, columns, options) {
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.6</a> on Wed Sep 22 2021 10:47:31 GMT+0000 (Greenwich Mean Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.6</a> on Tue Nov 30 2021 22:35:12 GMT+0000 (Greenwich Mean Time)
 </footer>
 
 <script> prettyPrint(); </script>
