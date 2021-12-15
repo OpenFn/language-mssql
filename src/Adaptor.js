@@ -169,9 +169,7 @@ function queryHandler(state, query, callback, options) {
  * Execute an SQL statement
  * @public
  * @example
- * execute(
- *   sql(sqlQuery)
- * )(state)
+ * sql({ query, options })
  * @constructor
  * @param {object} params - Payload data for the message
  * @returns {Operation}
@@ -297,9 +295,7 @@ export function findValue(filter) {
  * Insert a record
  * @public
  * @example
- * execute(
- *   insert(table, record, {setNull: ["'undefined'", "''"], logValues: false})
- * )(state)
+ * insert(table, record, {setNull: ["'undefined'", "''"], logValues: false})
  * @constructor
  * @param {string} table - The target table
  * @param {object} record - Payload data for the record as a JS object
@@ -344,9 +340,7 @@ export function insert(table, record, options) {
  * Insert many records, using the keys of the first as the column template
  * @public
  * @example
- * execute(
- *   insertMany(table, records, { setNull: false, writeSql: true, logValues: false })
- * )(state)
+ * insertMany(table, records, { setNull: false, writeSql: true, logValues: false })
  * @constructor
  * @param {string} table - The target table
  * @param {function} records - A function that takes state and returns an array of records
@@ -394,12 +388,8 @@ export function insertMany(table, records, options) {
  * Insert or update a record using SQL MERGE
  * @public
  * @example
- * execute(
- *   upsert(table, uuid, record, { setNull: "'undefined'", logValues: false})
- * )(state)
- * execute(
- *   upsert(table, [uuid1, uuid2], record, { setNull: "'undefined'", logValues: false})
- * )(state)
+ * upsert(table, uuid, record, { setNull: "'undefined'", logValues: false})
+ * upsert(table, [uuid1, uuid2], record, { setNull: "'undefined'", logValues: false})
  * @constructor
  * @param {string} table - The target table
  * @param {string} uuid - The uuid column to determine a matching/existing record

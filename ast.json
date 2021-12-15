@@ -15,7 +15,7 @@
           },
           {
             "title": "example",
-            "description": "execute(\n  sql(sqlQuery)\n)(state)"
+            "description": "sql({ query, options })"
           },
           {
             "title": "constructor",
@@ -105,7 +105,7 @@
           },
           {
             "title": "example",
-            "description": "execute(\n  insert(table, record, {setNull: [\"'undefined'\", \"''\"], logValues: false})\n)(state)"
+            "description": "insert(table, record, {setNull: [\"'undefined'\", \"''\"], logValues: false})"
           },
           {
             "title": "constructor",
@@ -169,7 +169,7 @@
           },
           {
             "title": "example",
-            "description": "execute(\n  insertMany(table, records, { setNull: false, writeSql: true, logValues: false })\n)(state)"
+            "description": "insertMany(table, records, { setNull: false, writeSql: true, logValues: false })"
           },
           {
             "title": "constructor",
@@ -234,7 +234,7 @@
           },
           {
             "title": "example",
-            "description": "execute(\n  upsert(table, uuid, record, { setNull: \"'undefined'\", logValues: false})\n)(state)\nexecute(\n  upsert(table, [uuid1, uuid2], record, { setNull: \"'undefined'\", logValues: false})\n)(state)"
+            "description": "upsert(table, uuid, record, { setNull: \"'undefined'\", logValues: false})\nupsert(table, [uuid1, uuid2], record, { setNull: \"'undefined'\", logValues: false})"
           },
           {
             "title": "constructor",
