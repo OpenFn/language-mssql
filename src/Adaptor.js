@@ -125,6 +125,16 @@ function flattenRows(state, rows) {
   return { ...state, response: { body: data } };
 }
 
+function composeNextState(state, rows) {
+  const obj = {};
+  rows.forEach(row => {
+    row.forEach(col => {
+      obj[col.metadata.colName] = col.value;
+    });
+  });
+  return { ...state, response: { body: obj } };
+}
+
 function queryHandler(state, query, callback, options) {
   const { connection } = state;
 
@@ -174,7 +184,7 @@ export function sql(params) {
       const { query, options } = expandReferences(params)(state);
 
       console.log(`Preparing to execute sql statement: ${query}`);
-      return queryHandler(state, query, flattenRows, options);
+      return queryHandler(state, query, composeNextState, options);
     } catch (e) {
       connection.close();
       throw e;
