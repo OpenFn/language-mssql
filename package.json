@@ -25,7 +25,7 @@
   "dependencies": {
     "@openfn/language-common": "1.6.2",
     "request": "2.88.0",
-    "tedious": "8.0.1"
+    "tedious": "15.1.0"
   },
   "devDependencies": {
     "@babel/cli": "^7.8.4",
