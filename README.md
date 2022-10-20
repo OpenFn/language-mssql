@@ -4,17 +4,14 @@ Language Pack for connecting to Azure SQL Server via OpenFn.
 
 ## Documentation
 
-### Sample state.json
+### Sample configuration
 
 ```json
 {
-  "data": { "a": 1 },
-  "configuration": {
-    "userName": "shhh",
-    "password": "secret",
-    "server": "something.database.windows.net",
-    "database": "my-demo"
-  }
+  "userName": "shhh",
+  "password": "secret",
+  "server": "something.database.windows.net",
+  "database": "my-demo"
 }
 ```
 
