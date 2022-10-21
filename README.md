@@ -1,4 +1,8 @@
-# Language MSSQL [![Build Status](https://travis-ci.org/OpenFn/language-mssql.svg?branch=master)](https://travis-ci.org/OpenFn/language-mssql)
+# _⚠️ MOVED TO [OpenFn/adaptors](https://github.com/OpenFn/adaptors)! ⚠️_
+
+**N.B.: New versions are available at: https://github.com/OpenFn/adaptors/tree/main/packages/mssql**
+
+# Language MSSQL (Archived)
 
 Language Pack for connecting to Azure SQL Server via OpenFn.
 
